@@ -3,9 +3,10 @@
  * Plugin Name: Landing Page Manager Pro
  * Plugin URI: https://github.com/oduppinsjr/landing-page-manager-pro
  * Description: Unlocks analytics, conversion tracking, and click-through rates for Landing Page Manager.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Odell Duppins
  * Text Domain: landing-page-manager-pro
+ * Requires Plugins: landing-page-manager
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -52,7 +53,7 @@ add_action( 'plugins_loaded', function () {
         return;
     }
     define( 'LP_MANAGER_PRO_LOADED', true );
-    define( 'LP_MANAGER_PRO_VERSION', '1.0.1' );
+    define( 'LP_MANAGER_PRO_VERSION', '1.0.2' );
 
     $pro_path = plugin_dir_path( __FILE__ );
     require_once $pro_path . 'includes/Update_Checker.php';
