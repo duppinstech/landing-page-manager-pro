@@ -1,15 +1,23 @@
 <?php
 /**
  * Plugin Name: Landing Page Manager Pro
+ * Plugin URI: https://github.com/oduppinsjr/landing-page-manager-pro
  * Description: Unlocks analytics, conversion tracking, and click-through rates for Landing Page Manager.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Odell Duppins
  * Text Domain: landing-page-manager-pro
- * Requires Plugins: landing-page-manager
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
+}
+
+if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_PATH' ) ) {
+    define( 'LP_MANAGER_PRO_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+}
+
+if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_URL' ) ) {
+    define( 'LP_MANAGER_PRO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
 
 /**
@@ -22,6 +30,17 @@ function lpmanager_pro_loaded() {
 }
 
 register_activation_hook( __FILE__, function () {
+    if ( ! function_exists( 'is_plugin_active' ) ) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+    if ( ! is_plugin_active( 'landing-page-manager/landing-page-manager.php' ) ) {
+        deactivate_plugins( plugin_basename( __FILE__ ) );
+        wp_die(
+            esc_html__( 'Landing Page Manager Pro requires Landing Page Manager to be installed and active before activation.', 'landing-page-manager-pro' ),
+            esc_html__( 'Plugin dependency missing', 'landing-page-manager-pro' ),
+            [ 'back_link' => true ]
+        );
+    }
     update_option( 'lpmanager_pro_activation_pending', true );
 } );
 
@@ -33,12 +52,14 @@ add_action( 'plugins_loaded', function () {
         return;
     }
     define( 'LP_MANAGER_PRO_LOADED', true );
-    define( 'LP_MANAGER_PRO_VERSION', '1.0.0' );
+    define( 'LP_MANAGER_PRO_VERSION', '1.0.1' );
 
     $pro_path = plugin_dir_path( __FILE__ );
+    require_once $pro_path . 'includes/Update_Checker.php';
     require_once $pro_path . 'includes/Tracking_Manager.php';
     require_once $pro_path . 'includes/Pro_Analytics.php';
 
+    LPManagerPro\Update_Checker::init();
     LPManager\admin\Tracking_Manager::init();
     LPManagerPro\Pro_Analytics::init();
 

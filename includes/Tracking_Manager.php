@@ -82,7 +82,7 @@ class Tracking_Manager {
             true
         );
         wp_localize_script( 'lpmanager-tracking', 'lpmanagerTracking', [
-            'ajaxurl'                    => admin_url( 'admin-ajax.php' ),
+            'ajaxurl'                    => admin_url( 'admin-ajax.php', 'relative' ),
             'nonce'                      => wp_create_nonce( 'lpmanager_nonce' ),
             'postId'                     => $post_id,
             'trackLinkClicks'            => ! empty( $opts['track_link_clicks'] ),
