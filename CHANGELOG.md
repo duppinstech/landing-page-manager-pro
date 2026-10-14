@@ -21,7 +21,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Post previews no longer count as page views.
 - Tracking works on pages served from a full-page cache. The script fetches a fresh nonce on load; previously a cached page could carry an expired nonce, and every tracking request from it failed.
 - Dashboard charts no longer merge landing pages that share a title; duplicates are labeled with their post ID.
-- The GitHub release lookup is cached (6 hours, 1 hour after a failure) instead of calling the API on every update-transient write. "Check for updates" clears the cache.
 - The Conversions admin page and submenu now use the `landing-page-manager-pro` text domain and translatable strings.
 - The analytics REST endpoint's `daily_visits` and `daily_conversions` now respect the tracking toggles, matching the dashboard.
 - When the free plugin's template loader is unavailable, analytics group pages under the `default` template instead of a client-specific slug.
@@ -38,6 +37,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Plugin updates now use the Duppins Technology GitHub updater standard v1.0.0 (`LPManager_Pro_GitHub_Updater`) and come from the GitHub Releases of `duppinstech/landing-page-manager-pro`. The `Update URI` header stops WordPress.org from offering updates for this slug.
+  - The updater loads with the plugin, so WP-Cron and background auto-updates see new releases, even while the free plugin is inactive.
+  - Only the release asset `landing-page-manager-pro.zip` is installed (or a release's only `.zip` asset), never a source zipball.
+  - Results are cached for 6 hours, then rechecked with `If-None-Match`. Failures wait 1 hour, and GitHub rate limits wait until their reset (at most 1 day).
+  - The "Check for updates" plugin action link is removed. Use **Dashboard → Updates → Check again** instead.
+  - The `lpmanager_pro_github_releases_api_url` and `lpmanager_pro_github_update_package_url` filters are removed. New filters are `lpmanager_pro_github_updater_config` and `lpmanager_pro_github_release_http_args`. Define `LPMANAGER_PRO_DISABLE_GITHUB_UPDATER` as `true` to turn updates off.
+  - The cache moved from the `lpmanager_pro_github_release` site transient to the site option of the same name. A new `uninstall.php` deletes both and leaves tracking data in place.
 - Page views are now counted by the tracking script, through a new `lpmanager_pro_session` request on page load, instead of on `template_redirect`. Cached pages are now counted, and visitors without JavaScript (mostly bots) no longer are, so view counts may shift after updating. With the new default exclusions (see Added), visits by editors, administrators, and bots also stop being counted. Use the `lpmanager_pro_page_view_counting` filter (`'server'`) to restore the previous behavior. `lpmanager_pro_should_count_page_view` still applies in both modes.
 - Pro now ships its own front-end tracking script instead of loading the free plugin's `assets/js/tracking.js`. It has no jQuery dependency and uses `navigator.sendBeacon` for data sent as the visitor leaves, so those requests are not cancelled by navigation.
 - Heatmap mouse samples are throttled to one per 100 ms, so new heatmap counts are lower in absolute terms than before; the relative distribution is unaffected.

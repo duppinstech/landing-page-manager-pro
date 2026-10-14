@@ -1,16 +1,20 @@
 # Shell scripts must keep LF endings to run under bash on any platform.
 *.sh text eol=lf
 
-# Development-only files are excluded from `git archive` and GitHub zipballs,
-# which the updater falls back to when a release has no ZIP asset.
+# Development-only files are excluded from `git archive` and GitHub source zipballs.
+# Release packages are built by bin/build-zip.sh, which has its own exclusion list; keep both in sync.
 /.claude export-ignore
 /.github export-ignore
 /bin export-ignore
 /memory export-ignore
+/tests export-ignore
 /workflows export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
 /AGENTS.md export-ignore
 /CLAUDE.md export-ignore
+/composer.json export-ignore
+/composer.lock export-ignore
 /intent.md export-ignore
+/phpunit.xml.dist export-ignore
 /plan.md export-ignore

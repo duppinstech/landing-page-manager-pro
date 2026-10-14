@@ -33,7 +33,11 @@
 
 ## Building a Release Package
 
-Run `bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pro-<version>.zip` (ignored by Git) containing a single `landing-page-manager-pro/` folder. Development files are excluded through `.gitattributes`. See [workflows/deployment.md](workflows/deployment.md).
+Run `bash bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pro.zip` (ignored by Git) from tracked files, with a single `landing-page-manager-pro/` folder and no development files. Pushing a `v*` tag runs `.github/workflows/release.yml`, which checks the tag against the plugin version, runs lint and tests, and attaches the ZIP to the GitHub release. See [workflows/deployment.md](workflows/deployment.md).
+
+## Updates
+
+Pro updates itself from the GitHub Releases of `duppinstech/landing-page-manager-pro` (the Duppins Technology GitHub updater standard). **Dashboard → Updates → Check again** forces a check. To turn updates off, add `define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true );` to `wp-config.php`. Sites can only download releases while the repository is public.
 
 ## Configuration
 
@@ -70,4 +74,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 **Odell Duppins** / **Duppins Technology** (https://duppinstech.com). See [OWNERSHIP.md](OWNERSHIP.md).
 
 - GitHub: [@oduppinsjr](https://github.com/oduppinsjr)
-- Repo: [landing-page-manager-pro](https://github.com/oduppinsjr/landing-page-manager-pro)
+- Repo: [landing-page-manager-pro](https://github.com/duppinstech/landing-page-manager-pro)

@@ -16,7 +16,8 @@ Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppin
 
 ## Validation
 
-- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3 and checks that the header and runtime versions match. No automated test suite or PHPCS configuration exists yet.
+- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3, checks that the header and runtime versions match, and runs the PHPUnit tests (`composer test`). The tests cover only the GitHub updater; no PHPCS configuration exists yet.
+- The GitHub updater (`includes/class-lpmanager-pro-github-updater.php`) is a verbatim copy of the Duppins Technology updater standard. Do not edit it here; change the reference implementation and re-port it.
 - For PHP changes, run `php -l` on each modified PHP file when PHP CLI is available.
 - For behavioral changes, verify the affected behavior in a WordPress install with the free Landing Page Manager dependency active; include a missing-dependency check when loader or activation behavior changes.
 - Review the final diff for unintended files, secrets, generated ZIPs, and version/changelog inconsistencies.
@@ -24,7 +25,7 @@ Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppin
 
 ## Git and Releases
 
-- Keep generated `.zip` packages out of Git; the existing ignore rule is intentional. Build packages with `bin/build-zip.sh`; `.gitattributes` `export-ignore` rules keep development files out of packages and GitHub zipballs.
+- Keep generated `.zip` packages out of Git; the existing ignore rule is intentional. `bin/build-zip.sh` builds `landing-page-manager-pro.zip` from tracked files minus its development-only exclusion list; `.gitattributes` `export-ignore` rules keep the same files out of GitHub source zipballs. Keep both lists in sync.
 - Use focused commits that describe the change. Do not commit secrets, local settings, or unreviewed release artifacts.
 - Releases are distributed through GitHub Releases and are consumed by the plugin updater. Follow [workflows/deployment.md](workflows/deployment.md); publishing a release or pushing a tag requires explicit authorization.
 

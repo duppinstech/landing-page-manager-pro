@@ -4,8 +4,9 @@ This is the living list of repository and release action items. Check items off 
 
 ## Current Status
 
-- Published: v1.0.2 (GitHub Release, 2026-03-09). Header and runtime version: 1.0.2 until 1.0.3 is prepared.
-- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B12–B19, F1–F4, F12). Not yet committed, tagged, or released.
+- Published: v1.0.2 (GitHub Release, 2026-03-09). Header, runtime version, and `readme.txt` Stable tag: 1.0.3 (unreleased).
+- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B12–B19, F1–F4, F12) plus the GitHub updater standard port (U1). Not yet tagged or released.
+- **Blocked for release delivery:** the repository is private, so sites cannot download releases (U2).
 
 ## Repository and SDLC Cleanup
 
@@ -17,7 +18,13 @@ This is the living list of repository and release action items. Check items off 
 - [x] Add a repeatable release ZIP build script (`bin/build-zip.sh`). _2026-10-14_
 - [x] Add a CI workflow that runs `php -l` on PHP 7.4 and current PHP 8.x. _2026-10-14_
 - [ ] Add a PHPCS (WordPress Coding Standards) ruleset and run it in CI. This needs a Composer dev dependency, so get owner approval first.
-- [ ] Add a PHPUnit / WP integration test harness (wp-env or WP test suite) for the tracking handlers and REST endpoint.
+- [ ] Add a WP integration test harness (wp-env or WP test suite) for the tracking handlers and REST endpoint. PHPUnit itself (dev-only Composer) was added with U1 and covers only the updater.
+
+## GitHub Updater Standard
+
+- [x] **U1. Port the Duppins Technology GitHub updater standard v1.0.0.** `includes/class-lpmanager-pro-github-updater.php` is a verbatim copy of the reference class, renamed only. It is booted from the main file at load time, with an `Update URI` header, `uninstall.php` cleanup, ported PHPUnit tests, `.github/workflows/release.yml`, and the standard `bin/build-zip.sh`. The old `Update_Checker` (B5, B16) was removed. _2026-10-14_
+- [ ] **U2. Release delivery while the repository is private.** The updater does not support private repositories and must not ship a token. Owner decision: make the repository public, or choose a separate public release channel.
+- [ ] **U3. Choose a `Tested up to` version** for `readme.txt`. The release workflow writes it into the release notes, and the updater reports it to WordPress. It is blank until chosen (see B16).
 
 ## 1.0.3: Bug Fixes and Hardening (in progress)
 
@@ -30,7 +37,8 @@ This is the living list of repository and release action items. Check items off 
 - [x] **B7. Dashboard chart data keyed by title.** Landing pages with the same title overwrote each other in `visits_per_page` / `conversions_per_page`. Duplicate titles are now made distinct by appending the post ID.
 - [x] **B8. Text domain and i18n.** The Conversions submenu used the free plugin's text domain, and the Conversions page strings were not translatable.
 - [x] **B9. Recording handlers accepted unpublished pages.** Click, engagement, heatmap, and rage-click handlers (and server-side view counting) accepted draft or private landing pages. They now require `publish` status, and a non-string `href` no longer causes a PHP 8 `TypeError`.
-- [ ] Bump the header and `LP_MANAGER_PRO_VERSION` to 1.0.3 and date the changelog entry when the release is cut.
+- [x] Bump the header, `LP_MANAGER_PRO_VERSION`, and `readme.txt` Stable tag to 1.0.3. _2026-10-14_
+- [ ] Date the changelog entry when the release is cut.
 - [ ] Manually verify in WordPress with the free plugin active: activation defaults, each tracking handler, the Conversions page, the REST endpoint, and the update check. Also check the missing-dependency path.
 
 ## Known Issues to Fix Next
@@ -66,10 +74,10 @@ Ordered by suggested priority. Each needs scope confirmation before it starts.
 ## Deployment Readiness (per release)
 
 - [ ] Choose the release scope and version; confirm the plugin header and runtime version match.
-- [ ] Run CI lint (and PHPCS/tests once added); record anything not run.
-- [ ] Build the ZIP with `bin/build-zip.sh`; confirm it contains `landing-page-manager-pro/landing-page-manager-pro.php` and `includes/`, and no development files.
+- [ ] Run CI lint and tests (and PHPCS once added); record anything not run.
+- [ ] Build the ZIP with `bash bin/build-zip.sh`; confirm it contains `landing-page-manager-pro/landing-page-manager-pro.php` and `includes/`, and no development files.
 - [ ] Test installation and update on a clean WordPress site with the free dependency active; verify the missing-dependency path.
-- [ ] Verify the GitHub Release asset name contains `landing-page-manager-pro` and ends with `.zip`, so the updater picks it over the zipball.
+- [ ] After the release workflow runs, confirm the release has the asset `landing-page-manager-pro.zip` and notes starting with `## Requirements`.
 - [ ] Review the changelog, tag, release notes, rollback path, and final Git diff.
 - [ ] Publish a GitHub Release only after explicit owner approval; then verify installation/update from the published release.
 

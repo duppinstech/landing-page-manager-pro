@@ -22,8 +22,13 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
+          tools: composer:v2
       - name: Lint PHP files
         run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: Install dev tooling
+        run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Unit tests
+        run: composer test
       - name: Check version consistency
         run: |
           header=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' landing-page-manager-pro.php | head -n 1)
