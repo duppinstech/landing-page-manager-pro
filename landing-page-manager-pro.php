@@ -4,7 +4,10 @@
  * Plugin URI: https://github.com/oduppinsjr/landing-page-manager-pro
  * Description: Unlocks analytics, conversion tracking, and click-through rates for Landing Page Manager.
  * Version: 1.0.2
- * Author: Odell Duppins
+ * Requires at least: 5.9
+ * Requires PHP: 7.4
+ * Author: Odell Duppins / Duppins Technology
+ * Author URI: https://duppinstech.com
  * Text Domain: landing-page-manager-pro
  * Requires Plugins: landing-page-manager
  */
@@ -42,7 +45,10 @@ register_activation_hook( __FILE__, function () {
             [ 'back_link' => true ]
         );
     }
-    update_option( 'lpmanager_pro_activation_pending', true );
+    // Reactivation must not overwrite tracking choices the admin has made since.
+    if ( ! get_option( 'lpmanager_pro_defaults_applied' ) ) {
+        update_option( 'lpmanager_pro_activation_pending', true );
+    }
 } );
 
 add_action( 'plugins_loaded', function () {
@@ -61,25 +67,46 @@ add_action( 'plugins_loaded', function () {
     require_once $pro_path . 'includes/Pro_Analytics.php';
 
     LPManagerPro\Update_Checker::init();
-    LPManager\admin\Tracking_Manager::init();
+    LPManagerPro\Tracking_Manager::init();
     LPManagerPro\Pro_Analytics::init();
 
-    // On first activation, enable all tracking options so users get full features immediately.
-    if ( get_option( 'lpmanager_pro_activation_pending' ) && function_exists( 'carbon_set_theme_option' ) ) {
-        delete_option( 'lpmanager_pro_activation_pending' );
-        $tracking_keys = [
-            'lpmanager_track_page_views',
-            'lpmanager_track_link_clicks',
-            'lpmanager_track_time_on_page',
-            'lpmanager_track_scroll_depth',
-            'lpmanager_track_heatmap',
-            'lpmanager_track_rage_clicks',
-            'lpmanager_track_outbound_clicks',
-            'lpmanager_track_cta_visibility',
-            'lpmanager_track_form_interactions',
-        ];
-        foreach ( $tracking_keys as $key ) {
-            carbon_set_theme_option( $key, true );
+    // Carbon Fields can only save values after its fields are registered (during init),
+    // so first-activation defaults must wait for that point rather than run here.
+    if ( get_option( 'lpmanager_pro_activation_pending' ) ) {
+        if ( did_action( 'carbon_fields_fields_registered' ) ) {
+            lpmanager_pro_apply_activation_defaults();
+        } else {
+            add_action( 'carbon_fields_fields_registered', 'lpmanager_pro_apply_activation_defaults', 20 );
         }
     }
 }, 20 );
+
+/**
+ * On first activation, enable all tracking options so users get full features immediately.
+ */
+function lpmanager_pro_apply_activation_defaults() {
+    if ( ! get_option( 'lpmanager_pro_activation_pending' ) || ! function_exists( 'carbon_set_theme_option' ) ) {
+        return;
+    }
+    $tracking_keys = [
+        'lpmanager_track_page_views',
+        'lpmanager_track_link_clicks',
+        'lpmanager_track_time_on_page',
+        'lpmanager_track_scroll_depth',
+        'lpmanager_track_heatmap',
+        'lpmanager_track_rage_clicks',
+        'lpmanager_track_outbound_clicks',
+        'lpmanager_track_cta_visibility',
+        'lpmanager_track_form_interactions',
+    ];
+    // Attempt once: a failure that repeated on every request would keep overwriting the admin's choices.
+    delete_option( 'lpmanager_pro_activation_pending' );
+    try {
+        foreach ( $tracking_keys as $key ) {
+            carbon_set_theme_option( $key, true );
+        }
+    } catch ( \Throwable $e ) {
+        return;
+    }
+    update_option( 'lpmanager_pro_defaults_applied', true, false );
+}

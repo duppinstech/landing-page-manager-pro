@@ -2,9 +2,16 @@
 /**
  * Pro-only: tracking, conversions, engagement. Loaded only when Pro plugin is active.
  */
-namespace LPManager\admin;
+namespace LPManagerPro;
 
 class Tracking_Manager {
+
+    /** Distinct links stored per page; recording endpoints are public, so storage must stay bounded. */
+    const MAX_LINKS_PER_PAGE = 200;
+
+    const MAX_HREF_LENGTH = 2048;
+
+    const MAX_HEATMAP_CELLS_PER_REQUEST = 5000;
 
     public static function init() {
         add_action( 'template_redirect', [ __CLASS__, 'increment_page_view' ] );
@@ -34,7 +41,16 @@ class Tracking_Manager {
             return;
         }
         $post_id = get_the_ID();
-        if ( ! $post_id ) {
+        if ( ! self::is_trackable_post( $post_id ) ) {
+            return;
+        }
+        /**
+         * Filters whether the current landing page request counts as a page view.
+         *
+         * @param bool $count   Whether to count the view. Previews are excluded by default.
+         * @param int  $post_id Landing page ID.
+         */
+        if ( ! apply_filters( 'lpmanager_pro_should_count_page_view', ! is_preview(), $post_id ) ) {
             return;
         }
         $views = (int) get_post_meta( $post_id, '_lpmanager_page_views', true );
@@ -46,7 +62,7 @@ class Tracking_Manager {
             $daily = [];
         }
         $daily[ $today ] = isset( $daily[ $today ] ) ? (int) $daily[ $today ] + 1 : 1;
-        update_option( 'lpmanager_daily_visits', $daily );
+        self::save_tracking_option( 'lpmanager_daily_visits', $daily );
     }
 
     public static function enqueue_tracking_scripts() {
@@ -104,8 +120,8 @@ class Tracking_Manager {
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        if ( ! $post_id ) {
-            wp_send_json_error( 'Invalid post ID.' );
+        if ( ! self::is_trackable_post( $post_id ) ) {
+            wp_send_json_error( 'Invalid post.' );
         }
         $conversions = (int) get_post_meta( $post_id, '_lpmanager_conversions', true );
         update_post_meta( $post_id, '_lpmanager_conversions', $conversions + 1 );
@@ -116,7 +132,7 @@ class Tracking_Manager {
             $daily = [];
         }
         $daily[ $today ] = isset( $daily[ $today ] ) ? (int) $daily[ $today ] + 1 : 1;
-        update_option( 'lpmanager_daily_conversions', $daily );
+        self::save_tracking_option( 'lpmanager_daily_conversions', $daily );
 
         wp_send_json_success( 'Conversion recorded.' );
     }
@@ -128,9 +144,9 @@ class Tracking_Manager {
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        $href    = isset( $_POST['href'] ) ? esc_url_raw( wp_unslash( $_POST['href'] ) ) : '';
+        $href    = isset( $_POST['href'] ) && is_string( $_POST['href'] ) ? esc_url_raw( substr( wp_unslash( $_POST['href'] ), 0, self::MAX_HREF_LENGTH ) ) : '';
         $text    = isset( $_POST['text'] ) ? sanitize_text_field( wp_unslash( $_POST['text'] ) ) : '';
-        if ( ! $post_id || get_post_type( $post_id ) !== 'landing_page' ) {
+        if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
         $key = self::normalize_click_key( $href, $text );
@@ -141,11 +157,14 @@ class Tracking_Manager {
         if ( ! isset( $stored[ $post_id ] ) || ! is_array( $stored[ $post_id ] ) ) {
             $stored[ $post_id ] = [];
         }
-        if ( ! isset( $stored[ $post_id ][ $key ] ) ) {
-            $stored[ $post_id ][ $key ] = [ 'count' => 0, 'href' => $href, 'label' => mb_substr( $text, 0, 100 ) ];
+        // Past the cap, new links still count toward the page total but get no per-link row.
+        if ( isset( $stored[ $post_id ][ $key ] ) || count( $stored[ $post_id ] ) < self::MAX_LINKS_PER_PAGE ) {
+            if ( ! isset( $stored[ $post_id ][ $key ] ) ) {
+                $stored[ $post_id ][ $key ] = [ 'count' => 0, 'href' => $href, 'label' => mb_substr( $text, 0, 100 ) ];
+            }
+            $stored[ $post_id ][ $key ]['count'] = (int) $stored[ $post_id ][ $key ]['count'] + 1;
+            self::save_tracking_option( 'lpmanager_link_clicks', $stored );
         }
-        $stored[ $post_id ][ $key ]['count'] = (int) $stored[ $post_id ][ $key ]['count'] + 1;
-        update_option( 'lpmanager_link_clicks', $stored );
 
         $total_clicks = (int) get_post_meta( $post_id, '_lpmanager_total_clicks', true );
         update_post_meta( $post_id, '_lpmanager_total_clicks', $total_clicks + 1 );
@@ -160,7 +179,7 @@ class Tracking_Manager {
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        if ( ! $post_id || get_post_type( $post_id ) !== 'landing_page' ) {
+        if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
         $stored = get_option( 'lpmanager_engagement', [] );
@@ -170,11 +189,13 @@ class Tracking_Manager {
         if ( ! isset( $stored[ $post_id ] ) || ! is_array( $stored[ $post_id ] ) ) {
             $stored[ $post_id ] = [ 'time_sum' => 0, 'time_count' => 0, 'scroll_25' => 0, 'scroll_50' => 0, 'scroll_75' => 0, 'scroll_100' => 0 ];
         }
+        $changed = false;
         if ( ! empty( $opts['track_time_on_page'] ) ) {
             $seconds = isset( $_POST['seconds'] ) ? absint( $_POST['seconds'] ) : 0;
             if ( $seconds > 0 && $seconds < 86400 ) {
                 $stored[ $post_id ]['time_sum']   = (int) $stored[ $post_id ]['time_sum'] + $seconds;
                 $stored[ $post_id ]['time_count'] = (int) $stored[ $post_id ]['time_count'] + 1;
+                $changed = true;
             }
         }
         if ( ! empty( $opts['track_scroll_depth'] ) ) {
@@ -182,9 +203,13 @@ class Tracking_Manager {
             if ( in_array( $depth, [ 25, 50, 75, 100 ], true ) ) {
                 $key = 'scroll_' . $depth;
                 $stored[ $post_id ][ $key ] = (int) ( $stored[ $post_id ][ $key ] ?? 0 ) + 1;
+                $changed = true;
             }
         }
-        update_option( 'lpmanager_engagement', $stored );
+        // CTA-visibility and form-interaction pings carry no payload; skip the write for them.
+        if ( $changed ) {
+            self::save_tracking_option( 'lpmanager_engagement', $stored );
+        }
         wp_send_json_success( 'Engagement recorded.' );
     }
 
@@ -195,14 +220,14 @@ class Tracking_Manager {
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        if ( ! $post_id || get_post_type( $post_id ) !== 'landing_page' ) {
+        if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
         $cells_raw = isset( $_POST['cells'] ) ? wp_unslash( $_POST['cells'] ) : '';
         if ( is_string( $cells_raw ) ) {
             $cells_raw = json_decode( $cells_raw, true );
         }
-        $cells = is_array( $cells_raw ) ? array_map( 'absint', $cells_raw ) : [];
+        $cells = is_array( $cells_raw ) ? array_map( 'absint', array_slice( $cells_raw, 0, self::MAX_HEATMAP_CELLS_PER_REQUEST ) ) : [];
         if ( empty( $cells ) ) {
             wp_send_json_success( 'No data.' );
         }
@@ -218,7 +243,7 @@ class Tracking_Manager {
                 $stored[ $post_id ][ $idx ] = (int) ( $stored[ $post_id ][ $idx ] ?? 0 ) + 1;
             }
         }
-        update_option( 'lpmanager_heatmap', $stored );
+        self::save_tracking_option( 'lpmanager_heatmap', $stored );
         wp_send_json_success( 'Heatmap recorded.' );
     }
 
@@ -229,12 +254,24 @@ class Tracking_Manager {
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        if ( ! $post_id || get_post_type( $post_id ) !== 'landing_page' ) {
+        if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
         $count = (int) get_post_meta( $post_id, '_lpmanager_rage_clicks', true );
         update_post_meta( $post_id, '_lpmanager_rage_clicks', $count + 1 );
         wp_send_json_success( 'Rage click recorded.' );
+    }
+
+    /** Only published landing pages may receive tracking data from the public endpoints. */
+    private static function is_trackable_post( $post_id ) {
+        return $post_id
+            && get_post_type( $post_id ) === 'landing_page'
+            && get_post_status( $post_id ) === 'publish';
+    }
+
+    /** Tracking options grow with traffic, so keep them out of the autoloaded options. */
+    private static function save_tracking_option( $name, $value ) {
+        update_option( $name, $value, false );
     }
 
     private static function normalize_click_key( $href, $text ) {
@@ -247,14 +284,19 @@ class Tracking_Manager {
     public static function render_conversions_page() {
         $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
         if ( empty( $opts['enable_conversion_tracking'] ) ) {
-            echo '<div class="wrap"><h1>Conversions</h1><p>Conversion tracking is currently disabled. Enable it in settings to view analytics.</p></div>';
+            echo '<div class="wrap"><h1>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</h1><p>' . esc_html__( 'Conversion tracking is currently disabled. Enable it in settings to view analytics.', 'landing-page-manager-pro' ) . '</p></div>';
             return;
         }
         echo '<div class="wrap">';
-        echo '<h1>Conversions</h1>';
-        echo '<p>This table shows phone link click conversions for each landing page.</p>';
+        echo '<h1>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</h1>';
+        echo '<p>' . esc_html__( 'This table shows phone link click conversions for each landing page.', 'landing-page-manager-pro' ) . '</p>';
         echo '<table class="widefat fixed striped">';
-        echo '<thead><tr><th>Landing Page</th><th>Visits</th><th>Conversions</th><th>Conversion Rate</th></tr></thead><tbody>';
+        echo '<thead><tr>';
+        echo '<th>' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th>' . esc_html__( 'Visits', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th>' . esc_html__( 'Conversion Rate', 'landing-page-manager-pro' ) . '</th>';
+        echo '</tr></thead><tbody>';
         $pages = get_posts( [ 'post_type' => 'landing_page', 'posts_per_page' => -1 ] );
         foreach ( $pages as $page ) {
             $visits = (int) get_post_meta( $page->ID, '_lpmanager_page_views', true );
@@ -279,11 +321,16 @@ class Tracking_Manager {
         }
         add_submenu_page(
             'lp_dashboard',
-            __( 'Conversions', 'landing-page-manager' ),
-            __( 'Conversions', 'landing-page-manager' ),
+            __( 'Conversions', 'landing-page-manager-pro' ),
+            __( 'Conversions', 'landing-page-manager-pro' ),
             'manage_options',
             'lp_conversions',
             [ __CLASS__, 'render_conversions_page' ]
         );
     }
+}
+
+// Pre-1.0.3 name, which sat in the free plugin's namespace; kept so external references still resolve.
+if ( ! class_exists( 'LPManager\admin\Tracking_Manager', false ) ) {
+    class_alias( __NAMESPACE__ . '\Tracking_Manager', 'LPManager\admin\Tracking_Manager' );
 }

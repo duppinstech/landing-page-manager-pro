@@ -1,22 +1,75 @@
 # Project Plan
 
-This is the living list of repository and release action items. Check items off only after completion; add dated notes for decisions that change scope.
+This is the living list of repository and release action items. Check items off only after completion; add dated notes for decisions that change scope. IDs (B1, F1, …) are stable so commits and issues can reference them.
 
-## Deployment Readiness
+## Current Status
 
-- [ ] Choose the next release scope and version; confirm the plugin header and runtime version will match.
-- [ ] Establish repeatable validation for supported WordPress/PHP versions. This repository currently has no test suite, PHPCS configuration, or CI workflow.
-- [ ] Define and verify the release ZIP contents, including the plugin entry point and `includes/`, while excluding development-only files as appropriate.
-- [ ] Test installation and update on a clean WordPress site with the free dependency active; verify the missing-dependency path when relevant.
-- [ ] Verify the GitHub Release package is usable by the existing plugin updater.
+- Published: v1.0.2 (GitHub Release, 2026-03-09). Header and runtime version: 1.0.2 until 1.0.3 is prepared.
+- In progress: 1.0.3, a bug-fix and hardening release (B1–B9, plus B13–B16 under Known Issues). Not yet committed, tagged, or released.
+
+## Repository and SDLC Cleanup
+
+- [x] Remove stale local release ZIPs from the repository root (1.0.0 with no top-level folder, 1.0.1, 1.0.2; the last two remain on GitHub Releases). _2026-10-14_
+- [x] Correct `OWNERSHIP.md`, which named the wrong product. _2026-10-14_
+- [x] Name Duppins Technology in the LICENSE, README, and plugin header ownership lines. _2026-10-14_
+- [x] Backfill `CHANGELOG.md` for 1.0.1 and 1.0.2 and correct the 1.0.0 date (2025 → 2026). _2026-10-14_
+- [x] Add `.gitattributes` `export-ignore` rules so GitHub zipballs and `git archive` exclude development files. _2026-10-14_
+- [x] Add a repeatable release ZIP build script (`bin/build-zip.sh`). _2026-10-14_
+- [x] Add a CI workflow that runs `php -l` on PHP 7.4 and current PHP 8.x. _2026-10-14_
+- [ ] Add a PHPCS (WordPress Coding Standards) ruleset and run it in CI. This needs a Composer dev dependency, so get owner approval first.
+- [ ] Add a PHPUnit / WP integration test harness (wp-env or WP test suite) for the tracking handlers and REST endpoint.
+
+## 1.0.3: Bug Fixes and Hardening (in progress)
+
+- [x] **B1. First-activation defaults never applied.** `carbon_set_theme_option()` ran at `plugins_loaded`, before Carbon Fields boots or registers fields. It raised a Carbon Fields error (a fatal under `WP_DEBUG`), and the pending flag was deleted first. Defaults now apply once, after `carbon_fields_fields_registered`. A `lpmanager_pro_defaults_applied` marker stops reactivation from overwriting the admin's later choices.
+- [x] **B2. Conversions recorded on any post.** `lpmanager_record_conversion` accepted any post ID and wrote meta to non-landing-page posts. It now requires a published `landing_page`, as the other handlers do.
+- [x] **B3. Unbounded, autoloaded tracking options.** Unauthenticated AJAX callers (the nonce is public on the page) could add unlimited distinct link entries to `lpmanager_link_clicks`, which is autoloaded on every request. Distinct links per page are now capped, stored `href`/label values are length-limited, and the tracking options are saved with autoload off.
+- [x] **B4. Heatmap request size.** The number of cells accepted per heatmap request is now capped.
+- [x] **B5. Updater calls the GitHub API on every transient write.** The release lookup is now cached in a site transient (6 hours, 1 hour after a failure). The cache clears on the manual "Check for updates" action.
+- [x] **B6. Previews counted as page views.** Post previews no longer increment views. Added the `lpmanager_pro_should_count_page_view` filter.
+- [x] **B7. Dashboard chart data keyed by title.** Landing pages with the same title overwrote each other in `visits_per_page` / `conversions_per_page`. Duplicate titles are now made distinct by appending the post ID.
+- [x] **B8. Text domain and i18n.** The Conversions submenu used the free plugin's text domain, and the Conversions page strings were not translatable.
+- [x] **B9. Recording handlers accepted unpublished pages.** Click, engagement, heatmap, and rage-click handlers (and server-side view counting) accepted draft or private landing pages. They now require `publish` status, and a non-string `href` no longer causes a PHP 8 `TypeError`.
+- [ ] Bump the header and `LP_MANAGER_PRO_VERSION` to 1.0.3 and date the changelog entry when the release is cut.
+- [ ] Manually verify in WordPress with the free plugin active: activation defaults, each tracking handler, the Conversions page, the REST endpoint, and the update check. Also check the missing-dependency path.
+
+## Known Issues to Fix Next
+
+- [ ] **B10. Advertised tracking that is not recorded.** README and CHANGELOG list outbound-click, CTA-visibility, and form-interaction tracking. The front-end script (owned by the free plugin) sends empty engagement pings for these, the server stores nothing, and the analytics endpoint reports nothing. `isOutbound` is computed but never used. The fix is F1; until it ships, the docs should say these are not yet reported.
+- [ ] **B11. Lost counts under concurrency.** Counters stored in options and post meta use read-modify-write without locking, so simultaneous hits drop increments. The fix is F6 (custom table with atomic `UPDATE … SET n = n + 1`).
+- [ ] **B12. Page caching hides views.** Views are counted server-side on `template_redirect`, so full-page caches (host or plugin) skip counting. The fix is F2.
+- [x] **B13. Hardcoded client template fallback.** `Pro_Analytics` fell back to the `client-template` template slug when the free plugin's template loader was missing. It now uses `default`. _2026-10-14_
+- [x] **B14. Pro class in the free plugin's namespace.** `Tracking_Manager` moved from `LPManager\admin` to `LPManagerPro\`, with a `class_alias` keeping the old name. _2026-10-14_
+- [x] **B15. REST `daily_visits` / `daily_conversions` ignored the tracking toggles**, while the dashboard filter respected them. Both now respect them. _2026-10-14_
+- [x] **B16. Updater metadata.** Added a `plugins_api` handler ("View details" modal with the GitHub release notes), `Requires at least` / `Requires PHP` headers, requirement fields on update entries, and a `no_update` entry so WordPress shows the auto-update toggle. `tested` stays blank until a tested-up-to version is chosen. _2026-10-14_
+
+## Feature Roadmap (aligned with intent: premium analytics and tracking)
+
+Ordered by suggested priority. Each needs scope confirmation before it starts.
+
+- [ ] **F1. Pro-owned tracking script.** Ship `assets/js/tracking.js` in Pro instead of loading the free plugin's file, so tracking can change without free-plugin releases. Implement outbound-click, CTA-visibility, and form-interaction recording end to end (fixes B10). Use `navigator.sendBeacon` for unload events.
+- [ ] **F2. Cache-safe view counting.** Count views from a JS beacon (with a server-side fallback when JS is disabled) so cached pages still count (fixes B12).
+- [ ] **F3. Exclude internal traffic and bots.** Add settings to skip logged-in editors/admins and common bot user agents (built on the B6 filter).
+- [ ] **F4. Privacy and consent.** Add a consent gate filter/JS hook (for example for CMP integrations), honor Do Not Track / Global Privacy Control as an option, and document what is stored (no IPs or personal data).
+- [ ] **F5. Date-range analytics.** Store per-page daily series (views, conversions, clicks) and accept `from`/`to` on the REST endpoint. Today daily totals are site-wide only.
+- [ ] **F6. Scalable storage.** Move counters, link clicks, engagement, and heatmaps into a custom table with a versioned schema and a one-time migration from the existing options and meta. This fixes B11 and removes the remaining large options.
+- [ ] **F7. Analytics export.** CSV export of by-page / by-client / by-template data (capability and nonce protected).
+- [ ] **F8. Reset analytics.** Per-page and global reset actions with confirmation, capability check, and nonce.
+- [ ] **F9. Campaign attribution.** Capture UTM source, medium, and campaign on view and conversion, and report conversions by source.
+- [ ] **F10. Uninstall cleanup (opt-in).** An `uninstall.php` that removes Pro data only when the owner enabled "delete data on uninstall".
+- [ ] **F11. Scheduled email reports.** Weekly per-client summary to configured recipients (WP-Cron).
+- [x] **F12. Updater details.** Delivered with B16. _2026-10-14_
+
+## Deployment Readiness (per release)
+
+- [ ] Choose the release scope and version; confirm the plugin header and runtime version match.
+- [ ] Run CI lint (and PHPCS/tests once added); record anything not run.
+- [ ] Build the ZIP with `bin/build-zip.sh`; confirm it contains `landing-page-manager-pro/landing-page-manager-pro.php` and `includes/`, and no development files.
+- [ ] Test installation and update on a clean WordPress site with the free dependency active; verify the missing-dependency path.
+- [ ] Verify the GitHub Release asset name contains `landing-page-manager-pro` and ends with `.zip`, so the updater picks it over the zipball.
 - [ ] Review the changelog, tag, release notes, rollback path, and final Git diff.
 - [ ] Publish a GitHub Release only after explicit owner approval; then verify installation/update from the published release.
 
 ## Ongoing Maintenance
 
-- [ ] Add focused regression tests when a suitable test harness is introduced.
 - [ ] Revisit this plan after each release and remove completed or obsolete items.
-
-## Current Status
-
-Scaffolding only. No release has been prepared or deployed by this plan.
