@@ -13,6 +13,17 @@ class Tracking_Manager {
 
     const MAX_HEATMAP_CELLS_PER_REQUEST = 5000;
 
+    /**
+     * Interaction types recorded by lpmanager_record_interaction: tracking option that enables
+     * each one, and the post meta counter it increments. Fixed keys keep storage bounded.
+     */
+    const INTERACTIONS = [
+        'outbound_click' => [ 'option' => 'track_outbound_clicks', 'meta' => '_lpmanager_outbound_clicks' ],
+        'cta_view'       => [ 'option' => 'track_cta_visibility', 'meta' => '_lpmanager_cta_views' ],
+        'form_start'     => [ 'option' => 'track_form_interactions', 'meta' => '_lpmanager_form_starts' ],
+        'form_submit'    => [ 'option' => 'track_form_interactions', 'meta' => '_lpmanager_form_submits' ],
+    ];
+
     public static function init() {
         add_action( 'template_redirect', [ __CLASS__, 'increment_page_view' ] );
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_tracking_scripts' ] );
@@ -26,6 +37,8 @@ class Tracking_Manager {
         add_action( 'wp_ajax_nopriv_lpmanager_record_heatmap', [ __CLASS__, 'record_heatmap' ] );
         add_action( 'wp_ajax_lpmanager_record_rage_click', [ __CLASS__, 'record_rage_click' ] );
         add_action( 'wp_ajax_nopriv_lpmanager_record_rage_click', [ __CLASS__, 'record_rage_click' ] );
+        add_action( 'wp_ajax_lpmanager_record_interaction', [ __CLASS__, 'record_interaction' ] );
+        add_action( 'wp_ajax_nopriv_lpmanager_record_interaction', [ __CLASS__, 'record_interaction' ] );
         add_action( 'admin_menu', [ __CLASS__, 'maybe_add_conversions_submenu' ] );
     }
 
@@ -86,15 +99,12 @@ class Tracking_Manager {
             return;
         }
         $post_id = get_the_ID();
-        $plugin_url = defined( 'LP_MANAGER_PLUGIN_URL' ) ? LP_MANAGER_PLUGIN_URL : '';
-        if ( ! $plugin_url ) {
-            return;
-        }
+        // Pro ships its own script so tracking changes do not depend on free-plugin releases.
         wp_enqueue_script(
             'lpmanager-tracking',
-            $plugin_url . 'assets/js/tracking.js',
-            [ 'jquery' ],
-            '1.2',
+            LP_MANAGER_PRO_PLUGIN_URL . 'assets/js/tracking.js',
+            [],
+            LP_MANAGER_PRO_VERSION,
             true
         );
         wp_localize_script( 'lpmanager-tracking', 'lpmanagerTracking', [
@@ -262,6 +272,39 @@ class Tracking_Manager {
         wp_send_json_success( 'Rage click recorded.' );
     }
 
+    public static function record_interaction() {
+        $type = isset( $_POST['type'] ) && is_string( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : '';
+        if ( ! isset( self::INTERACTIONS[ $type ] ) ) {
+            wp_send_json_error( 'Invalid interaction type.' );
+        }
+        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        if ( empty( $opts[ self::INTERACTIONS[ $type ]['option'] ] ) ) {
+            wp_send_json_error( 'Interaction tracking disabled.' );
+        }
+        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+        if ( ! self::is_trackable_post( $post_id ) ) {
+            wp_send_json_error( 'Invalid post.' );
+        }
+        $meta_key = self::INTERACTIONS[ $type ]['meta'];
+        $count    = (int) get_post_meta( $post_id, $meta_key, true );
+        update_post_meta( $post_id, $meta_key, $count + 1 );
+        wp_send_json_success( 'Interaction recorded.' );
+    }
+
+    /**
+     * Interaction counts for a page, keyed by interaction type.
+     *
+     * @return array<string,int>
+     */
+    public static function get_interaction_counts( $post_id ) {
+        $counts = [];
+        foreach ( self::INTERACTIONS as $type => $def ) {
+            $counts[ $type ] = (int) get_post_meta( $post_id, $def['meta'], true );
+        }
+        return $counts;
+    }
+
     /** Only published landing pages may receive tracking data from the public endpoints. */
     private static function is_trackable_post( $post_id ) {
         return $post_id
@@ -311,7 +354,43 @@ class Tracking_Manager {
             echo '</tr>';
         }
         echo '</tbody></table>';
+        self::render_interactions_table( $pages, $opts );
         echo '</div>';
+    }
+
+    /** Outbound clicks, CTA views, and form starts/submits; only enabled types get columns. */
+    private static function render_interactions_table( array $pages, array $opts ) {
+        $columns = [];
+        if ( ! empty( $opts['track_outbound_clicks'] ) ) {
+            $columns['outbound_click'] = __( 'Outbound Clicks', 'landing-page-manager-pro' );
+        }
+        if ( ! empty( $opts['track_cta_visibility'] ) ) {
+            $columns['cta_view'] = __( 'CTA Views', 'landing-page-manager-pro' );
+        }
+        if ( ! empty( $opts['track_form_interactions'] ) ) {
+            $columns['form_start']  = __( 'Form Starts', 'landing-page-manager-pro' );
+            $columns['form_submit'] = __( 'Form Submits', 'landing-page-manager-pro' );
+        }
+        if ( ! $columns ) {
+            return;
+        }
+        echo '<h2>' . esc_html__( 'Interactions', 'landing-page-manager-pro' ) . '</h2>';
+        echo '<p>' . esc_html__( 'CTA views count page views in which a call-to-action became visible. Form starts count the first field focused in each form per page view.', 'landing-page-manager-pro' ) . '</p>';
+        echo '<table class="widefat fixed striped"><thead><tr>';
+        echo '<th>' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
+        foreach ( $columns as $label ) {
+            echo '<th>' . esc_html( $label ) . '</th>';
+        }
+        echo '</tr></thead><tbody>';
+        foreach ( $pages as $page ) {
+            $counts = self::get_interaction_counts( $page->ID );
+            echo '<tr><td><a href="' . esc_url( get_edit_post_link( $page->ID ) ) . '">' . esc_html( get_the_title( $page ) ) . '</a></td>';
+            foreach ( array_keys( $columns ) as $type ) {
+                echo '<td>' . esc_html( $counts[ $type ] ) . '</td>';
+            }
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
     }
 
     public static function maybe_add_conversions_submenu() {

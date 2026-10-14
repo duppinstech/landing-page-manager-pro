@@ -5,7 +5,7 @@ This is the living list of repository and release action items. Check items off 
 ## Current Status
 
 - Published: v1.0.2 (GitHub Release, 2026-03-09). Header and runtime version: 1.0.2 until 1.0.3 is prepared.
-- In progress: 1.0.3, a bug-fix and hardening release (B1–B9, plus B13–B16 under Known Issues). Not yet committed, tagged, or released.
+- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B13–B18, F1, F12). Not yet committed, tagged, or released.
 
 ## Repository and SDLC Cleanup
 
@@ -35,7 +35,9 @@ This is the living list of repository and release action items. Check items off 
 
 ## Known Issues to Fix Next
 
-- [ ] **B10. Advertised tracking that is not recorded.** README and CHANGELOG list outbound-click, CTA-visibility, and form-interaction tracking. The front-end script (owned by the free plugin) sends empty engagement pings for these, the server stores nothing, and the analytics endpoint reports nothing. `isOutbound` is computed but never used. The fix is F1; until it ships, the docs should say these are not yet reported.
+- [x] **B10. Advertised tracking that was not recorded.** Outbound-click, CTA-visibility, and form-interaction tracking were listed but stored nothing. Fixed by F1. _2026-10-14_
+- [x] **B17. Time on page counted repeatedly.** The free plugin's script sent cumulative seconds on every tab hide, inflating `time_count` and skewing averages. Pro's script sends one measurement per page view. _2026-10-14_
+- [x] **B18. Heatmap samples double-counted.** The grid was re-sent without being cleared on every tab hide. It is now sent once per page view, and mouse samples are throttled to one per 100 ms (previously every `mousemove` was counted). _2026-10-14_
 - [ ] **B11. Lost counts under concurrency.** Counters stored in options and post meta use read-modify-write without locking, so simultaneous hits drop increments. The fix is F6 (custom table with atomic `UPDATE … SET n = n + 1`).
 - [ ] **B12. Page caching hides views.** Views are counted server-side on `template_redirect`, so full-page caches (host or plugin) skip counting. The fix is F2.
 - [x] **B13. Hardcoded client template fallback.** `Pro_Analytics` fell back to the `client-template` template slug when the free plugin's template loader was missing. It now uses `default`. _2026-10-14_
@@ -47,7 +49,7 @@ This is the living list of repository and release action items. Check items off 
 
 Ordered by suggested priority. Each needs scope confirmation before it starts.
 
-- [ ] **F1. Pro-owned tracking script.** Ship `assets/js/tracking.js` in Pro instead of loading the free plugin's file, so tracking can change without free-plugin releases. Implement outbound-click, CTA-visibility, and form-interaction recording end to end (fixes B10). Use `navigator.sendBeacon` for unload events.
+- [x] **F1. Pro-owned tracking script.** Pro now ships `assets/js/tracking.js` (no jQuery dependency) and uses `navigator.sendBeacon` for unload events. Outbound clicks, CTA views, and form starts/submits are recorded through `lpmanager_record_interaction` into fixed post-meta counters, shown on the Conversions page, and returned as `interactions` by the REST endpoint. The free plugin's analytics page does not display them yet; that is a free-plugin change. _2026-10-14_
 - [ ] **F2. Cache-safe view counting.** Count views from a JS beacon (with a server-side fallback when JS is disabled) so cached pages still count (fixes B12).
 - [ ] **F3. Exclude internal traffic and bots.** Add settings to skip logged-in editors/admins and common bot user agents (built on the B6 filter).
 - [ ] **F4. Privacy and consent.** Add a consent gate filter/JS hook (for example for CMP integrations), honor Do Not Track / Global Privacy Control as an option, and document what is stored (no IPs or personal data).

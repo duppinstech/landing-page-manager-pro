@@ -18,9 +18,9 @@
 - **Scroll depth** — 25%, 50%, 75%, 100% scroll milestones
 - **Heatmap** — Click heatmap data (grid-based)
 - **Rage clicks** — Count repeated clicks in the same area
-- **Outbound & CTA visibility** — Settings exist, but data is not yet recorded or reported (planned; see [plan.md](plan.md) B10/F1)
-- **Form interactions** — Setting exists, but data is not yet recorded or reported (planned; see [plan.md](plan.md) B10/F1)
-- **Conversions submenu** — Quick table of visits, conversions, and conversion rate per page
+- **Outbound clicks & CTA visibility** — Count clicks to other domains, and page views in which a call-to-action became visible
+- **Form interactions** — Count form starts (first field focused) and submissions
+- **Conversions submenu** — Visits, conversions, and conversion rate per page, plus an interactions table (outbound clicks, CTA views, form starts/submits)
 - **REST API** — `GET /wp-json/lpmanager/v1/analytics-data` for dashboard and filtering by client/template
 - **Dashboard integration** — Pro data (visits, conversions, summary) merged into the main LP Manager dashboard
 

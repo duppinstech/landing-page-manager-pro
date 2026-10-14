@@ -294,6 +294,14 @@ class Pro_Analytics {
         }
         usort( $rage_clicks, function ( $a, $b ) { return $b['count'] - $a['count']; } );
 
+        $interactions = [];
+        foreach ( $pages as $page ) {
+            $interactions[] = array_merge(
+                [ 'post_id' => $page->ID, 'title' => $page->post_title ],
+                Tracking_Manager::get_interaction_counts( $page->ID )
+            );
+        }
+
         return new \WP_REST_Response( [
             'tracking_enabled' => [
                 'page_views'     => ! empty( $tracking['track_page_views'] ),
@@ -303,6 +311,9 @@ class Pro_Analytics {
                 'scroll_depth'   => ! empty( $tracking['track_scroll_depth'] ),
                 'heatmap'        => ! empty( $tracking['track_heatmap'] ),
                 'rage_clicks'    => ! empty( $tracking['track_rage_clicks'] ),
+                'outbound_clicks'   => ! empty( $tracking['track_outbound_clicks'] ),
+                'cta_visibility'    => ! empty( $tracking['track_cta_visibility'] ),
+                'form_interactions' => ! empty( $tracking['track_form_interactions'] ),
             ],
             'summary'           => [
                 'total_pages'      => count( $pages ),
@@ -321,6 +332,7 @@ class Pro_Analytics {
             'engagement'        => $engagement,
             'heatmap'           => $heatmap,
             'rage_clicks'       => $rage_clicks,
+            'interactions'      => $interactions,
             'clients'           => $clients_list,
             'templates'         => $templates_list,
             'client_id_filter'  => $client_id,

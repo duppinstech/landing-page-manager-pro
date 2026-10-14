@@ -16,11 +16,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Heatmap requests are capped at 5,000 cells.
 - Tracking data options (`lpmanager_link_clicks`, `lpmanager_engagement`, `lpmanager_heatmap`, `lpmanager_daily_visits`, `lpmanager_daily_conversions`) are saved with autoload off, so they no longer load on every request.
 - Empty engagement pings (CTA visibility, form interactions) no longer rewrite the engagement option.
+- Time on page is recorded once per page view; previously every tab switch sent another measurement, inflating averages.
+- Heatmap data is sent once per page view; previously the grid was re-sent, uncleared, on every tab switch.
 - Post previews no longer count as page views.
 - Dashboard charts no longer merge landing pages that share a title; duplicates are labeled with their post ID.
 - The GitHub release lookup is cached (6 hours, 1 hour after a failure) instead of calling the API on every update-transient write. "Check for updates" clears the cache.
 - The Conversions admin page and submenu now use the `landing-page-manager-pro` text domain and translatable strings.
-
 - The analytics REST endpoint's `daily_visits` and `daily_conversions` now respect the tracking toggles, matching the dashboard.
 - When the free plugin's template loader is unavailable, analytics group pages under the `default` template instead of a client-specific slug.
 
@@ -30,9 +31,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - "View details" for Landing Page Manager Pro on the Plugins screen now shows the latest GitHub release notes.
 - WordPress's auto-update toggle is now available for the plugin.
 - `Requires at least: 5.9` and `Requires PHP: 7.4` plugin headers.
+- Outbound-click, CTA-visibility, and form-interaction tracking now record data (new `lpmanager_record_interaction` AJAX action; post meta `_lpmanager_outbound_clicks`, `_lpmanager_cta_views`, `_lpmanager_form_starts`, `_lpmanager_form_submits`). Counts appear in a new Interactions table on the Conversions page and as `interactions` in the analytics REST response, and `tracking_enabled` reports the three toggles.
 
 ### Changed
 
+- Pro now ships its own front-end tracking script instead of loading the free plugin's `assets/js/tracking.js`. It has no jQuery dependency and uses `navigator.sendBeacon` for data sent as the visitor leaves, so those requests are not cancelled by navigation.
+- Heatmap mouse samples are throttled to one per 100 ms, so new heatmap counts are lower in absolute terms than before; the relative distribution is unaffected.
 - `Tracking_Manager` moved to the `LPManagerPro` namespace. `LPManager\admin\Tracking_Manager` remains as an alias.
 
 ## [1.0.2] - 2026-03-09
@@ -67,8 +71,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Time-on-page and scroll-depth engagement tracking.
 - Heatmap tracking (grid-based).
 - Rage click tracking.
-- Optional outbound click and CTA visibility tracking settings (data is not yet recorded or reported; see `plan.md` B10).
-- Optional form interaction tracking setting (data is not yet recorded or reported; see `plan.md` B10).
+- Optional outbound click and CTA visibility tracking settings (data was not recorded until 1.0.3).
+- Optional form interaction tracking setting (data was not recorded until 1.0.3).
 - REST endpoint `GET /wp-json/lpmanager/v1/analytics-data` with client and template filters.
 - Dashboard integration: Pro data (visits, conversions, summary) added to main LP Manager dashboard.
 - Activation hook to enable all tracking options on first activation.
