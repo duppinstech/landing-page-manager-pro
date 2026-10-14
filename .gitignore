@@ -6,6 +6,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.sublime-*
+CLAUDE.local.md
+.claude/settings.local.json
 
 # Composer (if used later)
 /vendor/
