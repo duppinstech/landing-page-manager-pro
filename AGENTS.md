@@ -16,7 +16,7 @@ Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppin
 
 ## Validation
 
-- No automated test suite, PHPCS configuration, or CI workflow is currently defined in this repository.
+- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3 and checks that the header and runtime versions match. No automated test suite or PHPCS configuration exists yet.
 - For PHP changes, run `php -l` on each modified PHP file when PHP CLI is available.
 - For behavioral changes, verify the affected behavior in a WordPress install with the free Landing Page Manager dependency active; include a missing-dependency check when loader or activation behavior changes.
 - Review the final diff for unintended files, secrets, generated ZIPs, and version/changelog inconsistencies.
@@ -24,7 +24,7 @@ Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppin
 
 ## Git and Releases
 
-- Keep generated `.zip` packages out of Git; the existing ignore rule is intentional.
+- Keep generated `.zip` packages out of Git; the existing ignore rule is intentional. Build packages with `bin/build-zip.sh`; `.gitattributes` `export-ignore` rules keep development files out of packages and GitHub zipballs.
 - Use focused commits that describe the change. Do not commit secrets, local settings, or unreviewed release artifacts.
 - Releases are distributed through GitHub Releases and are consumed by the plugin updater. Follow [workflows/deployment.md](workflows/deployment.md); publishing a release or pushing a tag requires explicit authorization.
 

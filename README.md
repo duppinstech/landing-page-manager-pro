@@ -18,8 +18,8 @@
 - **Scroll depth** — 25%, 50%, 75%, 100% scroll milestones
 - **Heatmap** — Click heatmap data (grid-based)
 - **Rage clicks** — Count repeated clicks in the same area
-- **Outbound & CTA visibility** — Optional tracking for outbound links and CTA visibility
-- **Form interactions** — Optional form interaction tracking
+- **Outbound & CTA visibility** — Settings exist, but data is not yet recorded or reported (planned; see [plan.md](plan.md) B10/F1)
+- **Form interactions** — Setting exists, but data is not yet recorded or reported (planned; see [plan.md](plan.md) B10/F1)
 - **Conversions submenu** — Quick table of visits, conversions, and conversion rate per page
 - **REST API** — `GET /wp-json/lpmanager/v1/analytics-data` for dashboard and filtering by client/template
 - **Dashboard integration** — Pro data (visits, conversions, summary) merged into the main LP Manager dashboard
@@ -31,6 +31,10 @@
 3. Activate **Landing Page Manager Pro** in **Plugins** in the WordPress admin.
 4. On first activation, all tracking options are enabled by default. Adjust them in the main Landing Page Manager settings if needed.
 
+## Building a Release Package
+
+Run `bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pro-<version>.zip` (ignored by Git) containing a single `landing-page-manager-pro/` folder. Development files are excluded through `.gitattributes`. See [workflows/deployment.md](workflows/deployment.md).
+
 ## Configuration
 
 Tracking options (page views, link clicks, conversions, time on page, scroll depth, heatmap, rage clicks, etc.) are managed in the **Landing Page Manager** settings (provided by the free plugin). Pro reads these settings and enables the corresponding tracking and analytics.
@@ -39,6 +43,7 @@ Tracking options (page views, link clicks, conversions, time on page, scroll dep
 
 - All AJAX handlers use nonce verification (`lpmanager_nonce`).
 - REST analytics endpoint is restricted to users with `manage_options`.
+- Public recording endpoints accept only published landing pages, and per-page link storage and heatmap payloads are bounded.
 - Inputs are sanitized (e.g. `absint`, `sanitize_text_field`, `esc_url_raw`) and post types/taxonomies are validated.
 
 See [SECURITY.md](SECURITY.md) for how to report vulnerabilities.
@@ -53,7 +58,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Author
 
-**Odell Duppins**
+**Odell Duppins** / **Duppins Technology** (https://duppinstech.com). See [OWNERSHIP.md](OWNERSHIP.md).
 
 - GitHub: [@oduppinsjr](https://github.com/oduppinsjr)
 - Repo: [landing-page-manager-pro](https://github.com/oduppinsjr/landing-page-manager-pro)

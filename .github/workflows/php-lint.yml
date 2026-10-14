@@ -1,0 +1,32 @@
+name: PHP lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Lint PHP files
+        run: find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l
+      - name: Check version consistency
+        run: |
+          header=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' landing-page-manager-pro.php | head -n 1)
+          runtime=$(sed -n "s/.*define( 'LP_MANAGER_PRO_VERSION', '\([^']*\)'.*/\1/p" landing-page-manager-pro.php | head -n 1)
+          echo "Header: $header, runtime: $runtime"
+          test -n "$header" && test "$header" = "$runtime"
