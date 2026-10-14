@@ -32,11 +32,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - "View details" for Landing Page Manager Pro on the Plugins screen now shows the latest GitHub release notes.
 - WordPress's auto-update toggle is now available for the plugin.
 - `Requires at least: 5.9` and `Requires PHP: 7.4` plugin headers.
+- **Landing Pages → Pro Settings** page with tracking exclusions, both on by default: logged-in users who can edit content, and known bots or automation tools (including requests with no user agent). Excluded visitors are not tracked at all. Add custom rules with the `lpmanager_pro_exclude_request` filter.
 - Outbound-click, CTA-visibility, and form-interaction tracking now record data (new `lpmanager_record_interaction` AJAX action; post meta `_lpmanager_outbound_clicks`, `_lpmanager_cta_views`, `_lpmanager_form_starts`, `_lpmanager_form_submits`). Counts appear in a new Interactions table on the Conversions page and as `interactions` in the analytics REST response, and `tracking_enabled` reports the three toggles.
 
 ### Changed
 
-- Page views are now counted by the tracking script, through a new `lpmanager_pro_session` request on page load, instead of on `template_redirect`. Cached pages are now counted, and visitors without JavaScript (mostly bots) no longer are, so view counts may shift after updating. Use the `lpmanager_pro_page_view_counting` filter (`'server'`) to restore the previous behavior. `lpmanager_pro_should_count_page_view` still applies in both modes.
+- Page views are now counted by the tracking script, through a new `lpmanager_pro_session` request on page load, instead of on `template_redirect`. Cached pages are now counted, and visitors without JavaScript (mostly bots) no longer are, so view counts may shift after updating. With the new default exclusions (see Added), visits by editors, administrators, and bots also stop being counted. Use the `lpmanager_pro_page_view_counting` filter (`'server'`) to restore the previous behavior. `lpmanager_pro_should_count_page_view` still applies in both modes.
 - Pro now ships its own front-end tracking script instead of loading the free plugin's `assets/js/tracking.js`. It has no jQuery dependency and uses `navigator.sendBeacon` for data sent as the visitor leaves, so those requests are not cancelled by navigation.
 - Heatmap mouse samples are throttled to one per 100 ms, so new heatmap counts are lower in absolute terms than before; the relative distribution is unaffected.
 - `Tracking_Manager` moved to the `LPManagerPro` namespace. `LPManager\admin\Tracking_Manager` remains as an alias.

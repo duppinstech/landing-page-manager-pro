@@ -53,7 +53,7 @@ class Tracking_Manager {
             return;
         }
         $opts = lpmanager_tracking_options();
-        if ( empty( $opts['track_page_views'] ) || self::get_view_counting_mode() !== 'server' ) {
+        if ( empty( $opts['track_page_views'] ) || self::get_view_counting_mode() !== 'server' || Settings::is_excluded_request() ) {
             return;
         }
         if ( ! is_singular( 'landing_page' ) ) {
@@ -78,6 +78,10 @@ class Tracking_Manager {
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
+        if ( Settings::is_excluded_request() ) {
+            // Tells the script to stop sending events for this page view.
+            wp_send_json_success( [ 'track' => false, 'counted' => false ] );
+        }
         $opts    = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
         $counted = false;
         if ( ! empty( $opts['track_page_views'] )
@@ -89,6 +93,7 @@ class Tracking_Manager {
             $counted = true;
         }
         wp_send_json_success( [
+            'track'   => true,
             'nonce'   => wp_create_nonce( 'lpmanager_nonce' ),
             'counted' => $counted,
         ] );
@@ -187,6 +192,7 @@ class Tracking_Manager {
             wp_send_json_error( 'Conversion tracking disabled.' );
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
@@ -211,6 +217,7 @@ class Tracking_Manager {
             wp_send_json_error( 'Link click tracking disabled.' );
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         $href    = isset( $_POST['href'] ) && is_string( $_POST['href'] ) ? esc_url_raw( substr( wp_unslash( $_POST['href'] ), 0, self::MAX_HREF_LENGTH ) ) : '';
         $text    = isset( $_POST['text'] ) ? sanitize_text_field( wp_unslash( $_POST['text'] ) ) : '';
@@ -246,6 +253,7 @@ class Tracking_Manager {
             wp_send_json_error( 'Engagement tracking disabled.' );
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
@@ -287,6 +295,7 @@ class Tracking_Manager {
             wp_send_json_error( 'Heatmap tracking disabled.' );
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
@@ -321,6 +330,7 @@ class Tracking_Manager {
             wp_send_json_error( 'Rage click tracking disabled.' );
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
@@ -340,6 +350,7 @@ class Tracking_Manager {
             wp_send_json_error( 'Interaction tracking disabled.' );
         }
         check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
@@ -361,6 +372,13 @@ class Tracking_Manager {
             $counts[ $type ] = (int) get_post_meta( $post_id, $def['meta'], true );
         }
         return $counts;
+    }
+
+    /** Excluded requests get a success response so the script does not retry or log errors. */
+    private static function exit_if_excluded() {
+        if ( Settings::is_excluded_request() ) {
+            wp_send_json_success( 'Excluded.' );
+        }
     }
 
     /** Only published landing pages may receive tracking data from the public endpoints. */

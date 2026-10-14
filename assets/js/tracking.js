@@ -53,6 +53,7 @@
      * or is slow, the printed nonce is used.
      */
     var ready = false;
+    var disabled = false;
     var queue = [];
     var SESSION_TIMEOUT_MS = 5000;
 
@@ -73,6 +74,11 @@
             var fresh = null;
             try {
                 var res = JSON.parse(xhr.responseText);
+                if (res && res.success && res.data && res.data.track === false) {
+                    // Internal traffic or a bot (Pro Settings): drop queued and future events.
+                    disabled = true;
+                    queue = [];
+                }
                 if (res && res.success && res.data && res.data.nonce) fresh = res.data.nonce;
             } catch (e) { /* fall back to the printed nonce */ }
             becomeReady(fresh);
@@ -83,6 +89,7 @@
     }
 
     function send(action, data, useBeacon) {
+        if (disabled) return;
         if (!ready) {
             // Queued requests may be flushed while the page unloads, so always allow a beacon.
             queue.push([action, data, true]);

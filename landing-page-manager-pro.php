@@ -63,10 +63,12 @@ add_action( 'plugins_loaded', function () {
 
     $pro_path = plugin_dir_path( __FILE__ );
     require_once $pro_path . 'includes/Update_Checker.php';
+    require_once $pro_path . 'includes/Settings.php';
     require_once $pro_path . 'includes/Tracking_Manager.php';
     require_once $pro_path . 'includes/Pro_Analytics.php';
 
     LPManagerPro\Update_Checker::init();
+    LPManagerPro\Settings::init();
     LPManagerPro\Tracking_Manager::init();
     LPManagerPro\Pro_Analytics::init();
 

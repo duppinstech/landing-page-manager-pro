@@ -37,6 +37,8 @@ Run `bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pr
 
 ## Configuration
 
+**Landing Pages → Pro Settings** controls whose visits are tracked. By default, logged-in users who can edit content (editors, administrators) and known bots or automation tools are excluded. Developers can add rules, such as office IP ranges, with the `lpmanager_pro_exclude_request` filter.
+
 Tracking options (page views, link clicks, conversions, time on page, scroll depth, heatmap, rage clicks, etc.) are managed in the **Landing Page Manager** settings (provided by the free plugin). Pro reads these settings and enables the corresponding tracking and analytics.
 
 ## Security
