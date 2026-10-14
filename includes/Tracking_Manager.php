@@ -39,15 +39,21 @@ class Tracking_Manager {
         add_action( 'wp_ajax_nopriv_lpmanager_record_rage_click', [ __CLASS__, 'record_rage_click' ] );
         add_action( 'wp_ajax_lpmanager_record_interaction', [ __CLASS__, 'record_interaction' ] );
         add_action( 'wp_ajax_nopriv_lpmanager_record_interaction', [ __CLASS__, 'record_interaction' ] );
+        add_action( 'wp_ajax_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
+        add_action( 'wp_ajax_nopriv_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         add_action( 'admin_menu', [ __CLASS__, 'maybe_add_conversions_submenu' ] );
     }
 
+    /**
+     * Server-side counting on template_redirect. Used only in 'server' mode; by default the
+     * tracking script counts the view (see start_session) so full-page caches do not hide views.
+     */
     public static function increment_page_view() {
         if ( ! function_exists( 'lpmanager_tracking_options' ) ) {
             return;
         }
         $opts = lpmanager_tracking_options();
-        if ( empty( $opts['track_page_views'] ) ) {
+        if ( empty( $opts['track_page_views'] ) || self::get_view_counting_mode() !== 'server' ) {
             return;
         }
         if ( ! is_singular( 'landing_page' ) ) {
@@ -57,15 +63,63 @@ class Tracking_Manager {
         if ( ! self::is_trackable_post( $post_id ) ) {
             return;
         }
+        if ( self::should_count_page_view( ! is_preview(), $post_id ) ) {
+            self::record_page_view( $post_id );
+        }
+    }
+
+    /**
+     * Called by the tracking script on page load. Returns a fresh nonce (the one printed into a
+     * cached page may have expired) and, in 'client' mode, counts the page view. admin-ajax
+     * responses are sent with no-cache headers, so this request is never served from a page cache.
+     */
+    public static function start_session() {
+        $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+        if ( ! self::is_trackable_post( $post_id ) ) {
+            wp_send_json_error( 'Invalid post.' );
+        }
+        $opts    = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $counted = false;
+        if ( ! empty( $opts['track_page_views'] )
+            && ! empty( $_POST['count_view'] )
+            && self::get_view_counting_mode() === 'client'
+            && self::should_count_page_view( true, $post_id )
+        ) {
+            self::record_page_view( $post_id );
+            $counted = true;
+        }
+        wp_send_json_success( [
+            'nonce'   => wp_create_nonce( 'lpmanager_nonce' ),
+            'counted' => $counted,
+        ] );
+    }
+
+    /**
+     * 'client' (default): the tracking script counts views, so cached pages are counted and
+     * visitors without JavaScript (mostly bots) are not. 'server': count on template_redirect.
+     */
+    private static function get_view_counting_mode() {
         /**
-         * Filters whether the current landing page request counts as a page view.
+         * Filters how landing page views are counted.
+         *
+         * @param string $mode 'client' or 'server'.
+         */
+        $mode = apply_filters( 'lpmanager_pro_page_view_counting', 'client' );
+        return $mode === 'server' ? 'server' : 'client';
+    }
+
+    private static function should_count_page_view( $count, $post_id ) {
+        /**
+         * Filters whether a landing page view is counted. In 'client' mode this runs during the
+         * tracking script's AJAX request, with the visitor's login state available.
          *
          * @param bool $count   Whether to count the view. Previews are excluded by default.
          * @param int  $post_id Landing page ID.
          */
-        if ( ! apply_filters( 'lpmanager_pro_should_count_page_view', ! is_preview(), $post_id ) ) {
-            return;
-        }
+        return (bool) apply_filters( 'lpmanager_pro_should_count_page_view', $count, $post_id );
+    }
+
+    private static function record_page_view( $post_id ) {
         $views = (int) get_post_meta( $post_id, '_lpmanager_page_views', true );
         update_post_meta( $post_id, '_lpmanager_page_views', $views + 1 );
 
@@ -83,7 +137,8 @@ class Tracking_Manager {
             return;
         }
         $opts = lpmanager_tracking_options();
-        $needs_script = ! empty( $opts['track_link_clicks'] )
+        $needs_script = ! empty( $opts['track_page_views'] )
+            || ! empty( $opts['track_link_clicks'] )
             || ! empty( $opts['enable_conversion_tracking'] )
             || ! empty( $opts['track_time_on_page'] )
             || ! empty( $opts['track_scroll_depth'] )
@@ -109,8 +164,11 @@ class Tracking_Manager {
         );
         wp_localize_script( 'lpmanager-tracking', 'lpmanagerTracking', [
             'ajaxurl'                    => admin_url( 'admin-ajax.php', 'relative' ),
+            // Fallback only: the script requests a fresh nonce on load, since this one may come from a cached page.
             'nonce'                      => wp_create_nonce( 'lpmanager_nonce' ),
             'postId'                     => $post_id,
+            // Previews are never served from a page cache, so excluding them here is reliable.
+            'countView'                  => ! empty( $opts['track_page_views'] ) && self::get_view_counting_mode() === 'client' && ! is_preview(),
             'trackLinkClicks'            => ! empty( $opts['track_link_clicks'] ),
             'trackConversions'          => ! empty( $opts['enable_conversion_tracking'] ),
             'trackTimeOnPage'            => ! empty( $opts['track_time_on_page'] ),

@@ -1,7 +1,8 @@
 /**
  * Landing Page Manager Pro – front-end tracking.
  * Only runs features enabled via lpmanagerTracking (Settings → Conversion Tracking).
- * - Page views: counted server-side on template_redirect.
+ * - Session: on load, fetches a fresh nonce and (by default) counts the page view, so
+ *   pages served from a full-page cache are counted and never use an expired nonce.
  * - Link clicks and outbound clicks: sent per click.
  * - Conversions: phone/call button clicks.
  * - Time on page, heatmap: sent once when the visitor leaves (or hides the tab).
@@ -47,10 +48,54 @@
     var CTA_SELECTOR = '.lpmanager-call-button, .cta-call-button, a[href^="tel:"]';
 
     /**
+     * The nonce printed into the page may be stale when the page came from a full-page cache,
+     * so requests wait for a fresh one from the session request below. If that request fails
+     * or is slow, the printed nonce is used.
+     */
+    var ready = false;
+    var queue = [];
+    var SESSION_TIMEOUT_MS = 5000;
+
+    function becomeReady(freshNonce) {
+        if (ready) return;
+        if (freshNonce) nonce = freshNonce;
+        ready = true;
+        var pending = queue;
+        queue = [];
+        pending.forEach(function (item) { post(item[0], item[1], item[2]); });
+    }
+
+    function startSession() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', ajaxurl, true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+        xhr.onload = function () {
+            var fresh = null;
+            try {
+                var res = JSON.parse(xhr.responseText);
+                if (res && res.success && res.data && res.data.nonce) fresh = res.data.nonce;
+            } catch (e) { /* fall back to the printed nonce */ }
+            becomeReady(fresh);
+        };
+        xhr.onerror = function () { becomeReady(null); };
+        xhr.send('action=lpmanager_pro_session&post_id=' + postId + '&count_view=' + (cfg.countView ? '1' : '0'));
+        setTimeout(function () { becomeReady(null); }, SESSION_TIMEOUT_MS);
+    }
+
+    function send(action, data, useBeacon) {
+        if (!ready) {
+            // Queued requests may be flushed while the page unloads, so always allow a beacon.
+            queue.push([action, data, true]);
+            return;
+        }
+        post(action, data, useBeacon);
+    }
+
+    /**
      * POST form-encoded data to admin-ajax. Uses sendBeacon when the page may be unloading,
      * because browsers cancel ordinary requests during navigation.
      */
-    function send(action, data, useBeacon) {
+    function post(action, data, useBeacon) {
         var params = new URLSearchParams();
         params.append('action', action);
         params.append('nonce', nonce);
@@ -83,11 +128,15 @@
         if (left) return;
         left = true;
         leaveHandlers.forEach(function (fn) { fn(); });
+        // Leaving before the session responded: send what is queued with the printed nonce.
+        becomeReady(null);
     }
     window.addEventListener('pagehide', handleLeave);
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') handleLeave();
     });
+
+    startSession();
 
     // —— Link clicks, outbound clicks, conversions ——
     if (trackLinkClicks || trackConversions || trackOutboundClicks) {

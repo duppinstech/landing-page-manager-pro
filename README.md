@@ -11,7 +11,7 @@
 
 ## Features
 
-- **Page view tracking** — Count visits per landing page and daily totals
+- **Page view tracking** — Count visits per landing page and daily totals. Views are counted by the tracking script, so pages served from a full-page cache are still counted (set the `lpmanager_pro_page_view_counting` filter to `server` to count on page render instead)
 - **Conversion tracking** — Track conversions (e.g. phone link clicks) and conversion rate
 - **Link click tracking** — Per-link click counts and CTR by page
 - **Time on page** — Average time spent per page

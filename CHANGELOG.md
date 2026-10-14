@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Time on page is recorded once per page view; previously every tab switch sent another measurement, inflating averages.
 - Heatmap data is sent once per page view; previously the grid was re-sent, uncleared, on every tab switch.
 - Post previews no longer count as page views.
+- Tracking works on pages served from a full-page cache. The script fetches a fresh nonce on load; previously a cached page could carry an expired nonce, and every tracking request from it failed.
 - Dashboard charts no longer merge landing pages that share a title; duplicates are labeled with their post ID.
 - The GitHub release lookup is cached (6 hours, 1 hour after a failure) instead of calling the API on every update-transient write. "Check for updates" clears the cache.
 - The Conversions admin page and submenu now use the `landing-page-manager-pro` text domain and translatable strings.
@@ -35,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Page views are now counted by the tracking script, through a new `lpmanager_pro_session` request on page load, instead of on `template_redirect`. Cached pages are now counted, and visitors without JavaScript (mostly bots) no longer are, so view counts may shift after updating. Use the `lpmanager_pro_page_view_counting` filter (`'server'`) to restore the previous behavior. `lpmanager_pro_should_count_page_view` still applies in both modes.
 - Pro now ships its own front-end tracking script instead of loading the free plugin's `assets/js/tracking.js`. It has no jQuery dependency and uses `navigator.sendBeacon` for data sent as the visitor leaves, so those requests are not cancelled by navigation.
 - Heatmap mouse samples are throttled to one per 100 ms, so new heatmap counts are lower in absolute terms than before; the relative distribution is unaffected.
 - `Tracking_Manager` moved to the `LPManagerPro` namespace. `LPManager\admin\Tracking_Manager` remains as an alias.

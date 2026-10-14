@@ -5,7 +5,7 @@ This is the living list of repository and release action items. Check items off 
 ## Current Status
 
 - Published: v1.0.2 (GitHub Release, 2026-03-09). Header and runtime version: 1.0.2 until 1.0.3 is prepared.
-- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B13–B18, F1, F12). Not yet committed, tagged, or released.
+- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B12–B19, F1, F2, F12). Not yet committed, tagged, or released.
 
 ## Repository and SDLC Cleanup
 
@@ -39,8 +39,8 @@ This is the living list of repository and release action items. Check items off 
 - [x] **B17. Time on page counted repeatedly.** The free plugin's script sent cumulative seconds on every tab hide, inflating `time_count` and skewing averages. Pro's script sends one measurement per page view. _2026-10-14_
 - [x] **B18. Heatmap samples double-counted.** The grid was re-sent without being cleared on every tab hide. It is now sent once per page view, and mouse samples are throttled to one per 100 ms (previously every `mousemove` was counted). _2026-10-14_
 - [ ] **B11. Lost counts under concurrency.** Counters stored in options and post meta use read-modify-write without locking, so simultaneous hits drop increments. The fix is F6 (custom table with atomic `UPDATE … SET n = n + 1`).
-- [ ] **B19. Expired nonces on cached pages.** The tracking nonce is printed into the page. With full-page caching, cached copies keep serving it after it expires (12–24 hours), and every tracking request then fails `check_ajax_referer`. For logged-out visitors the nonce is shared and public, so it gives no real protection on these endpoints. Decide with F2: fetch a fresh nonce at runtime, or drop the nonce for anonymous recording and rely on the existing validation and caps.
-- [ ] **B12. Page caching hides views.** Views are counted server-side on `template_redirect`, so full-page caches (host or plugin) skip counting. The fix is F2.
+- [x] **B19. Expired nonces on cached pages.** A nonce printed into a cached page could be expired (12–24 hours), so every tracking request failed. The script now gets a fresh nonce from `lpmanager_pro_session` on load and holds events until it arrives (falling back to the printed nonce after an error, a 5 s timeout, or the visitor leaving). _2026-10-14_
+- [x] **B12. Page caching hid views.** Fixed by F2. _2026-10-14_
 - [x] **B13. Hardcoded client template fallback.** `Pro_Analytics` fell back to the `client-template` template slug when the free plugin's template loader was missing. It now uses `default`. _2026-10-14_
 - [x] **B14. Pro class in the free plugin's namespace.** `Tracking_Manager` moved from `LPManager\admin` to `LPManagerPro\`, with a `class_alias` keeping the old name. _2026-10-14_
 - [x] **B15. REST `daily_visits` / `daily_conversions` ignored the tracking toggles**, while the dashboard filter respected them. Both now respect them. _2026-10-14_
@@ -51,7 +51,7 @@ This is the living list of repository and release action items. Check items off 
 Ordered by suggested priority. Each needs scope confirmation before it starts.
 
 - [x] **F1. Pro-owned tracking script.** Pro now ships `assets/js/tracking.js` (no jQuery dependency) and uses `navigator.sendBeacon` for unload events. Outbound clicks, CTA views, and form starts/submits are recorded through `lpmanager_record_interaction` into fixed post-meta counters, shown on the Conversions page, and returned as `interactions` by the REST endpoint. The free plugin's analytics page does not display them yet; that is a free-plugin change. _2026-10-14_
-- [ ] **F2. Cache-safe view counting.** Count views from a JS beacon (with a server-side fallback when JS is disabled) so cached pages still count (fixes B12).
+- [x] **F2. Cache-safe view counting.** The same session request counts the view, so cached pages are counted and visitors without JavaScript (mostly bots) are not. The `lpmanager_pro_page_view_counting` filter (`'client'` by default, or `'server'`) restores counting on `template_redirect`. _2026-10-14_
 - [ ] **F3. Exclude internal traffic and bots.** Add settings to skip logged-in editors/admins and common bot user agents (built on the B6 filter).
 - [ ] **F4. Privacy and consent.** Add a consent gate filter/JS hook (for example for CMP integrations), honor Do Not Track / Global Privacy Control as an option, and document what is stored (no IPs or personal data).
 - [ ] **F5. Date-range analytics.** Store per-page daily series (views, conversions, clicks) and accept `from`/`to` on the REST endpoint. Today daily totals are site-wide only.
