@@ -37,9 +37,16 @@ Run `bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pr
 
 ## Configuration
 
+Tracking options (page views, link clicks, conversions, time on page, scroll depth, heatmap, rage clicks, etc.) are managed in the **Landing Page Manager** settings (provided by the free plugin). Pro reads these settings and enables the corresponding tracking and analytics.
+
 **Landing Pages → Pro Settings** controls whose visits are tracked. By default, logged-in users who can edit content (editors, administrators) and known bots or automation tools are excluded. Developers can add rules, such as office IP ranges, with the `lpmanager_pro_exclude_request` filter.
 
-Tracking options (page views, link clicks, conversions, time on page, scroll depth, heatmap, rage clicks, etc.) are managed in the **Landing Page Manager** settings (provided by the free plugin). Pro reads these settings and enables the corresponding tracking and analytics.
+## Privacy and Consent
+
+Pro stores only aggregate counts per landing page. It sets no cookies and stores no IP addresses, user agents, form contents, or other personal data. Suggested privacy-policy text is added under **Settings → Privacy**.
+
+- **Privacy signals** (on by default): visitors whose browser sends Global Privacy Control or Do Not Track are not tracked.
+- **Require consent** (off by default): tracking waits for consent. It works with consent plugins that support the [WP Consent API](https://wordpress.org/plugins/wp-consent-api/) ("statistics" category). For a custom banner, call `window.lpmanagerPro.grantConsent()` or `window.lpmanagerPro.revokeConsent()`, or set `window.lpmanagerProConsent = true` before the tracking script loads. The `lpmanager_pro_require_consent` filter can also turn this on.
 
 ## Security
 

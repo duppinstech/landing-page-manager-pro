@@ -53,7 +53,8 @@ class Tracking_Manager {
             return;
         }
         $opts = lpmanager_tracking_options();
-        if ( empty( $opts['track_page_views'] ) || self::get_view_counting_mode() !== 'server' || Settings::is_excluded_request() ) {
+        // Consent is only known in the browser, so server-side counting is skipped when it is required.
+        if ( empty( $opts['track_page_views'] ) || self::get_view_counting_mode() !== 'server' || Settings::requires_consent() || Settings::is_excluded_request() ) {
             return;
         }
         if ( ! is_singular( 'landing_page' ) ) {
@@ -174,6 +175,8 @@ class Tracking_Manager {
             'postId'                     => $post_id,
             // Previews are never served from a page cache, so excluding them here is reliable.
             'countView'                  => ! empty( $opts['track_page_views'] ) && self::get_view_counting_mode() === 'client' && ! is_preview(),
+            'requireConsent'             => Settings::requires_consent(),
+            'honorPrivacySignals'        => Settings::get()['honor_privacy_signals'],
             'trackLinkClicks'            => ! empty( $opts['track_link_clicks'] ),
             'trackConversions'          => ! empty( $opts['enable_conversion_tracking'] ),
             'trackTimeOnPage'            => ! empty( $opts['track_time_on_page'] ),

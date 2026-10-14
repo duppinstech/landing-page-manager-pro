@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - "View details" for Landing Page Manager Pro on the Plugins screen now shows the latest GitHub release notes.
 - WordPress's auto-update toggle is now available for the plugin.
 - `Requires at least: 5.9` and `Requires PHP: 7.4` plugin headers.
+- Privacy options on Pro Settings. *Honor privacy signals* (on by default) stops tracking visitors whose browser sends Global Privacy Control or Do Not Track. *Require consent* (off by default) makes tracking wait for WP Consent API "statistics" consent or `window.lpmanagerPro.grantConsent()`. Pro registers with the WP Consent API and adds suggested privacy-policy text under Settings → Privacy. New filter: `lpmanager_pro_require_consent`.
 - **Landing Pages → Pro Settings** page with tracking exclusions, both on by default: logged-in users who can edit content, and known bots or automation tools (including requests with no user agent). Excluded visitors are not tracked at all. Add custom rules with the `lpmanager_pro_exclude_request` filter.
 - Outbound-click, CTA-visibility, and form-interaction tracking now record data (new `lpmanager_record_interaction` AJAX action; post meta `_lpmanager_outbound_clicks`, `_lpmanager_cta_views`, `_lpmanager_form_starts`, `_lpmanager_form_submits`). Counts appear in a new Interactions table on the Conversions page and as `interactions` in the analytics REST response, and `tracking_enabled` reports the three toggles.
 

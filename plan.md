@@ -5,7 +5,7 @@ This is the living list of repository and release action items. Check items off 
 ## Current Status
 
 - Published: v1.0.2 (GitHub Release, 2026-03-09). Header and runtime version: 1.0.2 until 1.0.3 is prepared.
-- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B12–B19, F1–F3, F12). Not yet committed, tagged, or released.
+- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B12–B19, F1–F4, F12). Not yet committed, tagged, or released.
 
 ## Repository and SDLC Cleanup
 
@@ -53,7 +53,7 @@ Ordered by suggested priority. Each needs scope confirmation before it starts.
 - [x] **F1. Pro-owned tracking script.** Pro now ships `assets/js/tracking.js` (no jQuery dependency) and uses `navigator.sendBeacon` for unload events. Outbound clicks, CTA views, and form starts/submits are recorded through `lpmanager_record_interaction` into fixed post-meta counters, shown on the Conversions page, and returned as `interactions` by the REST endpoint. The free plugin's analytics page does not display them yet; that is a free-plugin change. _2026-10-14_
 - [x] **F2. Cache-safe view counting.** The same session request counts the view, so cached pages are counted and visitors without JavaScript (mostly bots) are not. The `lpmanager_pro_page_view_counting` filter (`'client'` by default, or `'server'`) restores counting on `template_redirect`. _2026-10-14_
 - [x] **F3. Exclude internal traffic and bots.** New **Landing Pages → Pro Settings** page (option `lpmanager_pro_settings`) with two options, both on by default: exclude logged-in users who can `edit_posts`, and exclude known bot/automation user agents (or no user agent). The session response tells the script to stop, and every recording endpoint also refuses excluded requests. The `lpmanager_pro_exclude_request` filter supports custom rules such as IP ranges. _2026-10-14_
-- [ ] **F4. Privacy and consent.** Add a consent gate filter/JS hook (for example for CMP integrations), honor Do Not Track / Global Privacy Control as an option, and document what is stored (no IPs or personal data).
+- [x] **F4. Privacy and consent.** Pro Settings adds two options. *Honor privacy signals* (on by default) skips visitors sending Global Privacy Control or Do Not Track, checked in the browser and through the `Sec-GPC`/`DNT` headers on every endpoint. *Require consent* (off by default, because tracking uses no cookies or personal data) waits for WP Consent API "statistics" consent or `window.lpmanagerPro.grantConsent()`; revocation stops tracking. Pro registers with the WP Consent API, and suggested privacy-policy text is added under Settings → Privacy. Filter: `lpmanager_pro_require_consent`. _2026-10-14_
 - [ ] **F5. Date-range analytics.** Store per-page daily series (views, conversions, clicks) and accept `from`/`to` on the REST endpoint. Today daily totals are site-wide only.
 - [ ] **F6. Scalable storage.** Move counters, link clicks, engagement, and heatmaps into a custom table with a versioned schema and a one-time migration from the existing options and meta. This fixes B11 and removes the remaining large options.
 - [ ] **F7. Analytics export.** CSV export of by-page / by-client / by-template data (capability and nonce protected).

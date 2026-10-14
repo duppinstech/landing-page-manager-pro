@@ -17,8 +17,10 @@ class Settings {
     const CAPABILITY = 'manage_options';
 
     const DEFAULTS = [
-        'exclude_editors' => true,
-        'exclude_bots'    => true,
+        'exclude_editors'       => true,
+        'exclude_bots'          => true,
+        'honor_privacy_signals' => true,
+        'require_consent'       => false,
     ];
 
     /**
@@ -30,6 +32,29 @@ class Settings {
     public static function init() {
         add_action( 'admin_init', [ __CLASS__, 'register' ] );
         add_action( 'admin_menu', [ __CLASS__, 'add_page' ], 30 );
+        add_action( 'admin_init', [ __CLASS__, 'add_privacy_policy_content' ] );
+        // Declares WP Consent API support so consent plugins know Pro respects the "statistics" category.
+        add_filter( 'wp_consent_api_registered_' . plugin_basename( LP_MANAGER_PRO_PLUGIN_PATH . 'landing-page-manager-pro.php' ), '__return_true' );
+    }
+
+    /**
+     * Whether tracking must wait for consent from the visitor (WP Consent API "statistics", or the
+     * JavaScript API in tracking.js).
+     */
+    public static function requires_consent() {
+        /**
+         * Filters whether tracking waits for visitor consent.
+         *
+         * @param bool $require Value of the "Require consent" setting.
+         */
+        return (bool) apply_filters( 'lpmanager_pro_require_consent', self::get()['require_consent'] );
+    }
+
+    /** Global Privacy Control (Sec-GPC) or Do Not Track (DNT) header on the current request. */
+    public static function has_privacy_signal() {
+        $gpc = isset( $_SERVER['HTTP_SEC_GPC'] ) ? trim( (string) $_SERVER['HTTP_SEC_GPC'] ) : '';
+        $dnt = isset( $_SERVER['HTTP_DNT'] ) ? trim( (string) $_SERVER['HTTP_DNT'] ) : '';
+        return $gpc === '1' || $dnt === '1';
     }
 
     /** @return array{exclude_editors: bool, exclude_bots: bool} */
@@ -58,12 +83,16 @@ class Settings {
         if ( $settings['exclude_editors'] && is_user_logged_in() && current_user_can( 'edit_posts' ) ) {
             $result = true;
         }
+        if ( ! $result && $settings['honor_privacy_signals'] && self::has_privacy_signal() ) {
+            $result = true;
+        }
         if ( ! $result && $settings['exclude_bots'] ) {
             $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) && is_string( $_SERVER['HTTP_USER_AGENT'] ) ? wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) : '';
             $result     = self::is_bot_user_agent( $user_agent );
         }
         /**
-         * Filters whether the current request is excluded from tracking.
+         * Filters whether the current request is excluded from tracking (internal traffic, bots,
+         * or a Global Privacy Control / Do Not Track signal, per Pro Settings).
          * Use it for custom rules such as office IP ranges.
          *
          * @param bool $result Whether the request is excluded.
@@ -96,6 +125,16 @@ class Settings {
         return $clean;
     }
 
+    /** Suggested text for Settings > Privacy describing what Pro stores. */
+    public static function add_privacy_policy_content() {
+        if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+            return;
+        }
+        $content = '<p>' . esc_html__( 'Landing pages on this site use Landing Page Manager Pro to measure how pages perform. It records aggregate counts per page: page views, call and link clicks (with the link address and text), outbound link clicks, whether a call-to-action became visible, form starts and submissions (not what was typed), time on page, scroll depth, a coarse grid of mouse positions, and repeated rapid clicks.', 'landing-page-manager-pro' ) . '</p>'
+            . '<p>' . esc_html__( 'It does not set cookies, store IP addresses or user agents, or record personal data, and the counts cannot be linked to an individual visitor. Visitors whose browser sends Global Privacy Control or Do Not Track are not tracked when the site honors those signals.', 'landing-page-manager-pro' ) . '</p>';
+        wp_add_privacy_policy_content( __( 'Landing Page Manager Pro', 'landing-page-manager-pro' ), wp_kses_post( $content ) );
+    }
+
     public static function add_page() {
         add_submenu_page(
             'lp_dashboard',
@@ -120,6 +159,14 @@ class Settings {
             'exclude_bots'    => [
                 __( 'Exclude bots', 'landing-page-manager-pro' ),
                 __( 'Do not track requests from known crawlers, uptime monitors, link-preview fetchers, and automation tools, or requests without a user agent.', 'landing-page-manager-pro' ),
+            ],
+            'honor_privacy_signals' => [
+                __( 'Honor privacy signals', 'landing-page-manager-pro' ),
+                __( 'Do not track visitors whose browser sends Global Privacy Control or Do Not Track.', 'landing-page-manager-pro' ),
+            ],
+            'require_consent' => [
+                __( 'Require consent', 'landing-page-manager-pro' ),
+                __( 'Do not track until the visitor consents to statistics, through a consent plugin that supports the WP Consent API or the JavaScript API described in the README. Tracking uses no cookies and stores no personal data, so this is off by default.', 'landing-page-manager-pro' ),
             ],
         ];
         echo '<div class="wrap">';

@@ -25,3 +25,9 @@ Record durable project decisions here using this format:
 - **Decision:** The tracking script calls `lpmanager_pro_session` on load. It returns a fresh nonce and counts the view. Events wait for the fresh nonce, falling back to the printed one. Owner chose this over dropping nonce checks for anonymous requests.
 - **Reason:** Full-page caches served expired nonces (breaking all tracking) and skipped server-side view counting.
 - **Impact:** One extra uncached admin-ajax request per page view. Visitors without JavaScript are no longer counted. Anyone could already inflate views by requesting the page; they can now do it slightly more cheaply by calling the session endpoint. `'server'` mode remains available through a filter.
+
+## 2026-10-14: Privacy defaults
+
+- **Decision:** Honor Global Privacy Control / Do Not Track by default (owner decision). Do not require consent by default; offer an opt-in "Require consent" setting that integrates with the WP Consent API and a small JS API.
+- **Reason:** Tracking sets no cookies and stores no personal data, so consent is not required by default, but sites with stricter policies can gate it.
+- **Impact:** Visitors sending GPC or DNT are no longer counted. With consent required, server-mode view counting is skipped, because consent is only known in the browser.
