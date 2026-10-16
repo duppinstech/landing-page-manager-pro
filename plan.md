@@ -4,8 +4,8 @@ This is the living list of repository and release action items. Check items off 
 
 ## Current Status
 
-- Published: v1.0.2 (GitHub Release, 2026-03-09). Header, runtime version, and `readme.txt` Stable tag: 1.0.3 (unreleased).
-- In progress: 1.0.3, a bug-fix and hardening release (B1–B10, B12–B19, B21–B28, F1–F4, F12, F13, R1, R2, R4–R9, R12, R13, P4, S1, L2, L3, B29, B30, B31, R14, L4, L5, P3/F10, R3, R11, U2, U3, PHPCS, integration harness) plus the GitHub updater standard port (U1). Not yet tagged or released.
+- Published: **v1.0.3** (GitHub Release, 2026-10-16, https://github.com/duppinstech/landing-page-manager-pro/releases/tag/v1.0.3). Previous: v1.0.2 (2026-03-09).
+- Released: 1.0.3 — a bug-fix and hardening release (B1–B10, B12–B19, B21–B28, F1–F4, F12, F13, R1, R2, R4–R9, R12, R13, P4, S1, L2, L3, B29, B30, B31, R14, L4, L5, P3/F10, R3, R11, U2, U3, PHPCS, integration harness) plus the GitHub updater standard port (U1).
 - **Release delivery unblocked (2026-10-16):** the repository is public; the anonymous GitHub API returns the latest release, and the old `oduppinsjr` URL used by 1.0.2 redirects.
 - First department review held 2026-10-14 ([meeting-notes/2026-10-14-1536-department-review.md](meeting-notes/2026-10-14-1536-department-review.md)). Approved items are B21–B25 and R1–R10; owner questions are under [Owner Decisions](#owner-decisions).
 - Second department review (re-review) held 2026-10-14 ([meeting-notes/2026-10-14-2040-department-review.md](meeting-notes/2026-10-14-2040-department-review.md)): all departments pass with follow-ups; approved items B26, B27, R12, R13 implemented the same day; new owner question P4. A targeted round 3 (Legal, Privacy, Product, QA) followed ([meeting-notes/2026-10-14-2250-department-review.md](meeting-notes/2026-10-14-2250-department-review.md)).
@@ -37,7 +37,8 @@ This is the living list of repository and release action items. Check items off 
 - [x] **U1. Port the Duppins Technology GitHub updater standard v1.0.0.** `includes/class-lpmanager-pro-github-updater.php` is a verbatim copy of the reference class, renamed only. It is booted from the main file at load time, with an `Update URI` header, `uninstall.php` cleanup, ported PHPUnit tests, `.github/workflows/release.yml`, and the standard `bin/build-zip.sh`. The old `Update_Checker` (B5, B16) was removed. _2026-10-14_
 - [x] **U2. Release delivery while the repository is private.** Resolved: the repository is public (see U2 under Owner Decisions). _2026-10-16_
 - [x] **U4. Repository location.** *Owner 2026-10-14:* the repository already lives at `duppinstech/landing-page-manager-pro` (transferred from `oduppinsjr`); the 404 came from it being private. The old URL redirects, so 1.0.2's `Update_Checker` follows it. _2026-10-14_
-- [ ] **U5. Staged upgrade test.** Once v1.0.3 is published, update a 1.0.2 site to 1.0.3 through the old checker (it queries the redirected `oduppinsjr` URL). It installs the first `.zip` asset whose name contains the slug, so `landing-page-manager-pro.zip` qualifies.
+- [x] **U5. Staged upgrade test.** On a disposable WordPress 7.1.3 site, 1.0.2 (installed from its release ZIP) detects 1.0.3 through the old `oduppinsjr` URL, but its automatic update **fails safely**: WordPress rolls back and 1.0.2 stays active (see B32). Installing the 1.0.3 ZIP over 1.0.2 (Plugins → Add New → Upload, or `wp plugin install <zip> --force`) works; afterwards the new updater reports 1.0.3 as current and offers the auto-update toggle. _2026-10-16_
+- [ ] **B32. 1.0.2 cannot auto-update.** 1.0.2's `Update_Checker::normalize_install_source_dir()` compares the unpacked folder with a trailing slash against one without, so it deletes the correctly named folder and the install fails ("A directory could not be read"). It cannot be fixed in 1.0.2 itself. Every 1.0.2 site needs one manual ZIP install of 1.0.3; later updates use the new updater. Owner: update managed sites manually (see the meeting notes for an optional workaround).
 - [x] **U3. `Tested up to`.** Set to 7.1 in `readme.txt` after verifying 1.0.3 on WordPress 7.1.3 (PHP 8.2) with the free plugin 1.0.6 active. _2026-10-16_
 
 ## 1.0.3: Bug Fixes and Hardening (in progress)
@@ -147,13 +148,13 @@ Forwarded from department reviews: agents recommend, the owner decides. Business
 - [ ] Choose the release scope and version; confirm the plugin header and runtime version match.
 - [ ] Run CI lint, PHPCS, and tests; run `bash tests/integration/run.sh` locally; record anything not run.
 - [ ] Build the ZIP with `bash bin/build-zip.sh`; confirm it contains `landing-page-manager-pro/landing-page-manager-pro.php` and `includes/`, and no development files.
-- [ ] Test installation and update on a clean WordPress site with the free dependency active; verify the missing-dependency path.
+- [x] Test installation and update on a clean WordPress site with the free dependency active; verify the missing-dependency path. Done for 1.0.3 (fresh install via the harness; update from 1.0.2 per U5). _2026-10-16_
 - [ ] Purge the page cache, CDN, and JavaScript minify/combine caches (*owner 2026-10-14: will do*) on every managed site after updating (or rolling back); pages cached before 1.0.3 send the old nonce and skip view counting until purged.
 - [ ] Before updating a managed site, check the size of `lpmanager_link_clicks` (`wp option get lpmanager_link_clicks --format=json | wc -c`). If the P4 cleanup fails on a very large option, skip it with `wp option update lpmanager_pro_link_clicks_cleaned 1`. After a downgrade and re-upgrade, delete that option so the cleanup runs again.
 - [ ] Optional on managed sites: rate-limit `admin-ajax.php?action=lpmanager_pro_session` at the web server or firewall (S1).
-- [ ] After the release workflow runs, confirm the release has the asset `landing-page-manager-pro.zip` and notes starting with `## Requirements`.
+- [x] After the release workflow runs, confirm the release has the asset `landing-page-manager-pro.zip` and notes starting with `## Requirements`. v1.0.3: asset `landing-page-manager-pro.zip` (18 runtime files, one top-level folder), notes start with `## Requirements` then the 1.0.3 changes, provenance attestation verifies, anonymous API returns v1.0.3. _2026-10-16_
 - [ ] Review the changelog, tag, release notes, rollback path, and final Git diff.
-- [ ] Publish a GitHub Release only after explicit owner approval; then verify installation/update from the published release. *Owner 2026-10-16: approved for 1.0.3:* once P3 is built, the department review passes, and CI is green, merge PR #1 into main and push tag `v1.0.3`.
+- [x] Publish a GitHub Release only after explicit owner approval; then verify installation/update from the published release. *Owner 2026-10-16: approved for 1.0.3:* once P3 is built, the department review passes, and CI is green, merge PR #1 into main and push tag `v1.0.3`. Published v1.0.3 (https://github.com/duppinstech/landing-page-manager-pro/releases/tag/v1.0.3). _2026-10-16_
 
 ## Ongoing Maintenance
 
