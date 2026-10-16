@@ -15,4 +15,6 @@ Keep only current, durable progress notes here. Move completed milestones to `CH
 - **Verification:** fresh install via `tests/integration/run.sh` (43 checks); 1.0.2 → 1.0.3: auto-update fails safely because of a 1.0.2 updater bug (plan B32), manual ZIP install works and hands over to the new updater.
 - **Repository:** public; history rewritten to remove a client name (plan L3); GitHub Support purge requested by the owner (L7).
 - **Next:** owner updates managed 1.0.2 sites by ZIP once; then R10 (free plugin display) and the approved roadmap (F6, F5, F7/F8, F9/F11).
+- **Released:** v1.0.4, https://github.com/duppinstech/landing-page-manager-pro/releases/tag/v1.0.4 (tag on `main` at a520afc, PR #4), after Landing Page Manager v1.0.7. Tracking options now live in Pro Settings; new Pro Analytics screen; Conversions folded into it. 1.0.3 → 1.0.4 auto-update verified on a test site.
+- **Next:** owner updates any remaining 1.0.2 sites by ZIP (B32), then confirms so the free plugin can drop its tracking.js; then F6 (scalable storage).
 
