@@ -56,8 +56,8 @@ class Pro_Analytics {
         }
         $data['visits_per_page'] = $visits_per_page;
         $data['conversions_per_page'] = $conversions_per_page;
-        $data['daily_visits'] = ! empty( $tracking['track_page_views'] ) ? ( get_option( 'lpmanager_daily_visits', [] ) ?: [] ) : [];
-        $data['daily_conversions'] = ! empty( $tracking['enable_conversion_tracking'] ) ? ( get_option( 'lpmanager_daily_conversions', [] ) ?: [] ) : [];
+        $data['daily_visits'] = ! empty( $tracking['track_page_views'] ) ? Stats::daily_series( 'views' ) : [];
+        $data['daily_conversions'] = ! empty( $tracking['enable_conversion_tracking'] ) ? Stats::daily_series( 'conversions' ) : [];
 
         $total_views = 0;
         $total_conversions = 0;
@@ -192,27 +192,17 @@ class Pro_Analytics {
             ];
         }
 
-        $link_clicks_raw = ! empty( $tracking['track_link_clicks'] ) ? get_option( 'lpmanager_link_clicks', [] ) : [];
         $link_clicks = [];
         foreach ( $pages as $page ) {
-            $pid = $page->ID;
-            $links = isset( $link_clicks_raw[ $pid ] ) && is_array( $link_clicks_raw[ $pid ] ) ? $link_clicks_raw[ $pid ] : [];
-            $list = [];
-            foreach ( $links as $k => $item ) {
-                $list[] = [
-                    'href'  => isset( $item['href'] ) ? $item['href'] : '',
-                    'label' => isset( $item['label'] ) ? $item['label'] : '',
-                    'count' => isset( $item['count'] ) ? (int) $item['count'] : 0,
-                ];
-            }
-            usort( $list, function ( $a, $b ) { return $b['count'] - $a['count']; } );
-            $link_clicks[] = [ 'post_id' => $pid, 'title' => $page->post_title, 'links' => array_slice( $list, 0, 20 ) ];
+            $link_clicks[] = [
+                'post_id' => $page->ID,
+                'title'   => $page->post_title,
+                'links'   => ! empty( $tracking['track_link_clicks'] ) ? Stats::links_for_post( $page->ID, 20 ) : [],
+            ];
         }
 
-        $daily_visits = ! empty( $tracking['track_page_views'] ) ? get_option( 'lpmanager_daily_visits', [] ) : [];
-        $daily_conversions = ! empty( $tracking['enable_conversion_tracking'] ) ? get_option( 'lpmanager_daily_conversions', [] ) : [];
-        if ( ! is_array( $daily_visits ) ) $daily_visits = [];
-        if ( ! is_array( $daily_conversions ) ) $daily_conversions = [];
+        $daily_visits      = ! empty( $tracking['track_page_views'] ) ? Stats::daily_series( 'views' ) : [];
+        $daily_conversions = ! empty( $tracking['enable_conversion_tracking'] ) ? Stats::daily_series( 'conversions' ) : [];
 
         $overall_ctr_conv = $total_views > 0 ? round( ( $total_conversions / $total_views ) * 100, 1 ) : 0;
         $overall_ctr_clicks = $total_views > 0 ? round( ( $total_clicks / $total_views ) * 100, 1 ) : 0;
@@ -256,14 +246,12 @@ class Pro_Analytics {
             }
         }
 
-        $engagement_raw = get_option( 'lpmanager_engagement', [] );
-        if ( ! is_array( $engagement_raw ) ) {
-            $engagement_raw = [];
-        }
+        // Per-page sums from the stats table (all time, including data from before 1.0.5).
+        $stats      = Stats::totals( wp_list_pluck( $pages, 'ID' ) );
         $engagement = [];
         foreach ( $pages as $page ) {
             $pid = $page->ID;
-            $e = self::get_engagement_for_post( $engagement_raw, $pid );
+            $e   = $stats[ $pid ] ?? [];
             $time_avg = ! empty( $e['time_count'] ) && (int) $e['time_count'] > 0 ? round( (int) ( $e['time_sum'] ?? 0 ) / (int) $e['time_count'] ) : 0;
             $engagement[] = [
                 'post_id'    => $pid,
@@ -277,14 +265,13 @@ class Pro_Analytics {
             ];
         }
 
-        $heatmap_raw = get_option( 'lpmanager_heatmap', [] );
-        if ( ! is_array( $heatmap_raw ) ) {
-            $heatmap_raw = [];
-        }
         $heatmap = [];
         foreach ( $pages as $page ) {
-            $pid = $page->ID;
-            $grid = self::get_heatmap_for_post( $heatmap_raw, $pid );
+            $pid  = $page->ID;
+            $grid = [];
+            for ( $cell = 0; $cell < 100; $cell++ ) {
+                $grid[] = (int) ( $stats[ $pid ][ Stats::heat_metric( $cell ) ] ?? 0 );
+            }
             $heatmap[] = [
                 'post_id' => $pid,
                 'title'   => $page->post_title,
@@ -371,29 +358,5 @@ class Pro_Analytics {
             $labels[ $page->ID ] = $title_counts[ $title ] > 1 ? sprintf( '%s (#%d)', $title, $page->ID ) : $title;
         }
         return $labels;
-    }
-
-    /** Ensures we find engagement row even when option keys are stored as strings. */
-    private static function get_engagement_for_post( array $engagement_raw, $post_id ) {
-        $pid = (int) $post_id;
-        if ( isset( $engagement_raw[ $pid ] ) && is_array( $engagement_raw[ $pid ] ) ) {
-            return $engagement_raw[ $pid ];
-        }
-        if ( isset( $engagement_raw[ (string) $pid ] ) && is_array( $engagement_raw[ (string) $pid ] ) ) {
-            return $engagement_raw[ (string) $pid ];
-        }
-        return [];
-    }
-
-    /** Ensures we find heatmap grid even when option keys are stored as strings. */
-    private static function get_heatmap_for_post( array $heatmap_raw, $post_id ) {
-        $pid = (int) $post_id;
-        if ( isset( $heatmap_raw[ $pid ] ) && is_array( $heatmap_raw[ $pid ] ) ) {
-            return array_values( $heatmap_raw[ $pid ] );
-        }
-        if ( isset( $heatmap_raw[ (string) $pid ] ) && is_array( $heatmap_raw[ (string) $pid ] ) ) {
-            return array_values( $heatmap_raw[ (string) $pid ] );
-        }
-        return array_fill( 0, 100, 0 );
     }
 }

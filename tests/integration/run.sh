@@ -77,6 +77,20 @@ grep -q '^FAIL' /tmp/lpm-checks.$$ && FAILED=$((FAILED + 1))
 grep -q '^All server-side checks passed' /tmp/lpm-checks.$$ || { grep -q '^FAILED' /tmp/lpm-checks.$$ || { echo "FAIL server-side checks did not complete"; FAILED=$((FAILED + 1)); }; }
 rm -f /tmp/lpm-checks.$$
 
+# B11: simultaneous requests must not lose increments (atomic counters, F6).
+BEFORE=$(wp post meta get "$PID" _lpmanager_conversions)
+S2=$(post -d "action=lpmanager_pro_session&post_id=$PID&count_view=0")
+AUTH2="post_id=$PID&nonce=$(echo "$S2" | field nonce)&session=$(echo "$S2" | field session)"
+for _ in $(seq 1 40); do post -d "action=lpmanager_record_conversion&$AUTH2" >/dev/null & done
+wait
+check "40 simultaneous conversions all counted" "$((BEFORE + 40))" "$(wp post meta get "$PID" _lpmanager_conversions)"
+# First hits on a page with no counter row yet: simultaneous creation must still end with one row and every hit counted.
+S3=$(post -d "action=lpmanager_pro_session&post_id=$OTHER&count_view=0")
+AUTH3="post_id=$OTHER&nonce=$(echo "$S3" | field nonce)&session=$(echo "$S3" | field session)"
+for _ in $(seq 1 20); do post -d "action=lpmanager_record_rage_click&$AUTH3" >/dev/null & done
+wait
+check "20 simultaneous first hits counted on one row" "20 1" "$(wp eval "global \$wpdb; echo get_post_meta( $OTHER, '_lpmanager_rage_clicks', true ), ' ', \$wpdb->get_var( \$wpdb->prepare( \"SELECT COUNT(*) FROM {\$wpdb->postmeta} WHERE post_id = %d AND meta_key = '_lpmanager_rage_clicks'\", $OTHER ) );")"
+
 # Real uninstall through WP-CLI (plugin files are mounted read-only, so they are not deleted).
 wp plugin activate landing-page-manager-pro >/dev/null
 wp option update lpmanager_pro_settings '{"delete_data_on_uninstall":true}' --format=json >/dev/null

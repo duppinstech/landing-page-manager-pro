@@ -2,7 +2,7 @@
 Requires at least: 5.9
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,6 +16,9 @@ Updates are delivered through GitHub Releases of duppinstech/landing-page-manage
 
 == Upgrade Notice ==
 
+= 1.0.5 =
+Analytics move to two new database tables; existing data is copied automatically on the first page load after updating, and your numbers stay the same. Counts are no longer lost on busy pages. Take a database backup before updating.
+
 = 1.0.4 =
 Tracking options moved to Landing Pages > Pro Settings > What is tracked; your choices carry over. Conversions is now part of Landing Pages > Pro Analytics. Update Landing Page Manager to 1.0.7 or later to hide its old Conversion Tracking tab.
 
@@ -24,7 +27,7 @@ Counts may be lower after updating: previews, logged-in users who can edit conte
 
 == Uninstall ==
 
-Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings, including your tracking choices. Analytics counts are always kept, because Landing Page Manager uses them too.
+Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings, including your tracking choices. That also deletes Pro's analytics tables; the per-page totals shown in Landing Page Manager are always kept.
 
 == Changelog ==
 
