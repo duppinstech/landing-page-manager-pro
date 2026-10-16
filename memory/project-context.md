@@ -1,7 +1,7 @@
 # Project Context
 
 - Product: Landing Page Manager Pro WordPress plugin (GPL-2.0-or-later from 1.0.3; earlier versions proprietary).
-- Owner and copyright holder: Duppins Technology; author: Odell Duppins. See `OWNERSHIP.md`.
+- Owner, author, and copyright holder: Odell Duppins (d/b/a Duppins Technology, a trade name). See `OWNERSHIP.md`.
 - Required free dependency: Landing Page Manager.
 - Documented minimums: WordPress 5.9 and PHP 7.4.
 - GitHub Releases are used for plugin updates.

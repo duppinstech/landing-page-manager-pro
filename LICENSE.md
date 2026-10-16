@@ -1,8 +1,7 @@
 # License
 
 **Landing Page Manager Pro**  
-Copyright © 2026 Duppins Technology (https://duppinstech.com).  
-Author: Odell Duppins.
+Copyright © 2026 Odell Duppins (d/b/a Duppins Technology) (https://duppinstech.com).
 
 ## GNU General Public License
 

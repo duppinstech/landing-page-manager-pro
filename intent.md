@@ -22,4 +22,4 @@ Provide the premium analytics and tracking extension for Landing Page Manager wh
 
 ## Ownership
 
-Source ownership remains with Duppins Technology, the copyright holder; Odell Duppins is the author. See [LICENSE.md](LICENSE.md) for the terms governing use and distribution.
+Source ownership remains with Odell Duppins, doing business as Duppins Technology, who holds the copyright. See [LICENSE.md](LICENSE.md) for the terms governing use and distribution.

@@ -2,7 +2,7 @@
 
 ## Project
 
-Landing Page Manager Pro is a commercial WordPress plugin, licensed under GPL-2.0-or-later from 1.0.3, owned by Duppins Technology (copyright holder); Odell Duppins is the author. It extends the separately maintained Landing Page Manager plugin. See [intent.md](intent.md) and [LICENSE.md](LICENSE.md).
+Landing Page Manager Pro is a commercial WordPress plugin, licensed under GPL-2.0-or-later from 1.0.3, owned and authored by Odell Duppins, doing business as Duppins Technology (copyright holder). It extends the separately maintained Landing Page Manager plugin. See [intent.md](intent.md) and [LICENSE.md](LICENSE.md).
 
 ## Working Rules
 

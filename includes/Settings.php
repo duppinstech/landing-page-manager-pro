@@ -3,7 +3,7 @@
  * Pro-owned settings (tracking exclusions). The tracking toggles themselves live in the free
  * plugin's Carbon Fields settings; these are stored separately so Pro does not modify them.
  *
- * Copyright (c) 2026 Duppins Technology. Licensed under GPL-2.0-or-later; see LICENSE.md.
+ * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 namespace LPManagerPro;
 

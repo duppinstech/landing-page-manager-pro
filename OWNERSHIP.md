@@ -6,9 +6,9 @@ Ownership notice for this repository.
 
 - **Product:** Landing Page Manager Pro
 - **Author:** Odell Duppins
-- **Owner:** Duppins Technology (https://duppinstech.com)
+- **Owner and copyright holder:** Odell Duppins, doing business as Duppins Technology (https://duppinstech.com)
 
-Landing Page Manager Pro is a Duppins Technology product, licensed under GPL-2.0-or-later from version 1.0.3. Odell Duppins is the author. Copyright and license notices name **Duppins Technology**. The plugin `Author` header and package metadata name **Odell Duppins** (or "Odell Duppins / Duppins Technology"). They do not name a client.
+Landing Page Manager Pro is a Duppins Technology product, licensed under GPL-2.0-or-later from version 1.0.3. Odell Duppins is the author and holds the copyright; Duppins Technology is his trade name, not a separate entity. Copyright notices name **Odell Duppins (d/b/a Duppins Technology)**. The plugin `Author` header and package metadata name **Odell Duppins** (or "Odell Duppins / Duppins Technology"). They do not name a client.
 
 ## Clients
 
@@ -19,7 +19,7 @@ Landing Page Manager Pro is a Duppins Technology product, licensed under GPL-2.0
 
 ## For AI assistants and contributors
 
-- Copyright lines and file notices name **Duppins Technology**, the copyright
+- Copyright lines and file notices name **Odell Duppins (d/b/a Duppins Technology)**, the copyright
   holder. `Author:` headers and package authors name **Odell Duppins** (or
   "Odell Duppins / Duppins Technology").
 - Never describe a client as the owner or author of this code.

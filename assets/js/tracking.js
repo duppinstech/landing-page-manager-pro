@@ -10,7 +10,7 @@
  * Nothing runs when the browser sends Global Privacy Control / Do Not Track (if honored), or
  * before consent when consent is required (see the Consent section at the end).
  *
- * Copyright (c) 2026 Duppins Technology. Licensed under GPL-2.0-or-later; see LICENSE.md.
+ * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 (function () {
     'use strict';
