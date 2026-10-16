@@ -1,6 +1,8 @@
 <?php
 /**
  * Pro-only: analytics REST endpoint and dashboard data (views, conversions, summary).
+ *
+ * Copyright (c) 2026 Duppins Technology. Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 namespace LPManagerPro;
 
@@ -294,12 +296,21 @@ class Pro_Analytics {
         }
         usort( $rage_clicks, function ( $a, $b ) { return $b['count'] - $a['count']; } );
 
+        // Like the daily series, interaction types whose tracking is off are left out.
+        $enabled_types = [];
+        foreach ( Tracking_Manager::INTERACTIONS as $type => $def ) {
+            if ( ! empty( $tracking[ $def['option'] ] ) ) {
+                $enabled_types[ $type ] = true;
+            }
+        }
         $interactions = [];
-        foreach ( $pages as $page ) {
-            $interactions[] = array_merge(
-                [ 'post_id' => $page->ID, 'title' => $page->post_title ],
-                Tracking_Manager::get_interaction_counts( $page->ID )
-            );
+        if ( $enabled_types ) {
+            foreach ( $pages as $page ) {
+                $interactions[] = array_merge(
+                    [ 'post_id' => $page->ID, 'title' => $page->post_title ],
+                    array_intersect_key( Tracking_Manager::get_interaction_counts( $page->ID ), $enabled_types )
+                );
+            }
         }
 
         return new \WP_REST_Response( [

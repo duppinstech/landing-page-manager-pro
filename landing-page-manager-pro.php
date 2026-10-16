@@ -2,15 +2,19 @@
 /**
  * Plugin Name: Landing Page Manager Pro
  * Plugin URI: https://github.com/duppinstech/landing-page-manager-pro
- * Description: Unlocks analytics, conversion tracking, and click-through rates for Landing Page Manager.
+ * Description: Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outbound clicks, CTA views, and form tracking for Landing Page Manager, with bot and internal-traffic exclusion and privacy and consent controls.
  * Version: 1.0.3
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: Odell Duppins / Duppins Technology
  * Author URI: https://duppinstech.com
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: landing-page-manager-pro
  * Requires Plugins: landing-page-manager
  * Update URI: https://github.com/duppinstech/landing-page-manager-pro
+ *
+ * Copyright (c) 2026 Duppins Technology. Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -9,6 +9,8 @@
  * - Scroll depth, CTA visibility, form start/submit: sent at most once per page view.
  * Nothing runs when the browser sends Global Privacy Control / Do Not Track (if honored), or
  * before consent when consent is required (see the Consent section at the end).
+ *
+ * Copyright (c) 2026 Duppins Technology. Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 (function () {
     'use strict';
@@ -54,31 +56,42 @@
     var CTA_SELECTOR = '.lpmanager-call-button, .cta-call-button, a[href^="tel:"]';
 
     /**
-     * The nonce printed into the page may be stale when the page came from a full-page cache,
-     * so requests wait for a fresh one from the session request below. If that request fails
-     * or is slow, the printed nonce is used.
+     * Requests wait for the session request below, which returns a fresh nonce (the printed one
+     * may be stale on a cached page) and a signed session token that every recording endpoint
+     * requires. If the session request fails or is too slow, queued events are dropped.
      */
+    var session = null;
+    var sessionAt = 0;
+    // Tokens are valid for one hour; renew before that when the visitor returns to the tab.
+    var SESSION_REFRESH_MS = 50 * 60 * 1000;
     var ready = false;
     var disabled = false;
     var consentRevoked = false;
     var queue = [];
     var SESSION_TIMEOUT_MS = 5000;
 
-    function becomeReady(freshNonce) {
-        if (ready) return;
+    function becomeReady(freshNonce, sessionToken) {
+        // A late session response still enables events sent after it arrives.
         if (freshNonce) nonce = freshNonce;
+        if (sessionToken) {
+            session = sessionToken;
+            sessionAt = Date.now();
+        }
+        if (ready) return;
         ready = true;
         var pending = queue;
         queue = [];
         pending.forEach(function (item) { post(item[0], item[1], item[2]); });
     }
 
-    function startSession() {
+    /** countView is false when renewing an expired token, so the view is not counted twice. */
+    function startSession(countView) {
         var xhr = new XMLHttpRequest();
         xhr.open('POST', ajaxurl, true);
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
         xhr.onload = function () {
             var fresh = null;
+            var token = null;
             try {
                 var res = JSON.parse(xhr.responseText);
                 if (res && res.success && res.data && res.data.track === false) {
@@ -87,12 +100,13 @@
                     queue = [];
                 }
                 if (res && res.success && res.data && res.data.nonce) fresh = res.data.nonce;
-            } catch (e) { /* fall back to the printed nonce */ }
-            becomeReady(fresh);
+                if (res && res.success && res.data && res.data.session) token = res.data.session;
+            } catch (e) { /* no session: events are dropped */ }
+            becomeReady(fresh, token);
         };
-        xhr.onerror = function () { becomeReady(null); };
-        xhr.send('action=lpmanager_pro_session&post_id=' + postId + '&count_view=' + (cfg.countView ? '1' : '0'));
-        setTimeout(function () { becomeReady(null); }, SESSION_TIMEOUT_MS);
+        xhr.onerror = function () { becomeReady(null, null); };
+        xhr.send('action=lpmanager_pro_session&post_id=' + postId + '&count_view=' + (countView ? '1' : '0'));
+        setTimeout(function () { becomeReady(null, null); }, SESSION_TIMEOUT_MS);
     }
 
     function send(action, data, useBeacon) {
@@ -110,9 +124,12 @@
      * because browsers cancel ordinary requests during navigation.
      */
     function post(action, data, useBeacon) {
+        // The server rejects events without a session token, so do not send them.
+        if (!session) return;
         var params = new URLSearchParams();
         params.append('action', action);
         params.append('nonce', nonce);
+        params.append('session', session);
         params.append('post_id', String(data.post_id || postId));
         Object.keys(data).forEach(function (key) {
             if (key !== 'post_id' && data[key] !== null && data[key] !== undefined) {
@@ -142,8 +159,8 @@
         if (left) return;
         left = true;
         leaveHandlers.forEach(function (fn) { fn(); });
-        // Leaving before the session responded: send what is queued with the printed nonce.
-        becomeReady(null);
+        // Leaving before the session responded: queued events cannot be sent without a session.
+        becomeReady(null, null);
     }
     /** Starts the session and all enabled trackers. Runs once, immediately or after consent. */
     var started = false;
@@ -152,9 +169,13 @@
         started = true;
         window.addEventListener('pagehide', handleLeave);
         document.addEventListener('visibilitychange', function () {
-            if (document.visibilityState === 'hidden') handleLeave();
+            if (document.visibilityState === 'hidden') {
+                handleLeave();
+            } else if (session && Date.now() - sessionAt > SESSION_REFRESH_MS) {
+                startSession(false);
+            }
         });
-        startSession();
+        startSession(!!cfg.countView);
         startTrackers();
     }
 
@@ -177,8 +198,8 @@
                     sendInteraction('outbound_click', true);
                 }
                 if (trackConversions && (a.classList.contains('lpmanager-call-button') || a.classList.contains('cta-call-button') || /^tel:/i.test(href))) {
-                    var dataPostId = parseInt(a.getAttribute('data-post-id'), 10);
-                    send('lpmanager_record_conversion', { post_id: dataPostId || postId }, true);
+                    // Credited to this page: the session token is only valid for the page that issued it.
+                    send('lpmanager_record_conversion', {}, true);
                 }
             }, true);
         }
@@ -216,8 +237,12 @@
             for (i = 0; i < 100; i++) grid[i] = 0;
             var lastSample = 0;
             var sampleEveryMs = 100;
+            // Matches the server's per-request cap (Tracking_Manager::MAX_HEATMAP_CELLS_PER_REQUEST).
+            var maxSamples = 600;
+            var samples = 0;
 
             document.addEventListener('mousemove', function (e) {
+                if (samples >= maxSamples) return;
                 var now = Date.now();
                 if (now - lastSample < sampleEveryMs) return;
                 lastSample = now;
@@ -227,6 +252,7 @@
                 var col = Math.min(9, Math.floor((e.clientX / w) * 10));
                 var row = Math.min(9, Math.floor((e.clientY / h) * 10));
                 grid[row * 10 + col]++;
+                samples++;
             }, { passive: true });
 
             onLeave(function () {
@@ -313,8 +339,8 @@
     }
 
     // —— Consent ——
-    // Without "Require consent", tracking starts immediately (it uses no cookies and stores no
-    // personal data). With it, nothing runs until consent is given through the WP Consent API
+    // Without "Require consent", tracking starts immediately (it sets no cookies and stores only
+    // aggregate counts). With it, nothing runs until consent is given through the WP Consent API
     // ("statistics" category) or window.lpmanagerPro.grantConsent() / window.lpmanagerProConsent = true.
     if (!cfg.requireConsent) {
         start();

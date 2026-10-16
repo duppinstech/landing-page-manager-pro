@@ -1,6 +1,8 @@
 <?php
 /**
  * Pro-only: tracking, conversions, engagement. Loaded only when Pro plugin is active.
+ *
+ * Copyright (c) 2026 Duppins Technology. Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 namespace LPManagerPro;
 
@@ -9,9 +11,38 @@ class Tracking_Manager {
     /** Distinct links stored per page; recording endpoints are public, so storage must stay bounded. */
     const MAX_LINKS_PER_PAGE = 200;
 
-    const MAX_HREF_LENGTH = 2048;
+    /** Stored link addresses are capped and kept without query strings or fragments (see clean_href). */
+    const MAX_HREF_LENGTH = 512;
 
-    const MAX_HEATMAP_CELLS_PER_REQUEST = 5000;
+    /** Stored link labels are capped; the click key uses the same capped label so rows can be re-keyed. */
+    const MAX_LABEL_LENGTH = 100;
+
+    /** Set once link rows stored before 1.0.3 have been cleaned (P4). */
+    const LINK_CLICKS_CLEANED_OPTION = 'lpmanager_pro_link_clicks_cleaned';
+
+    /** Nonce action for the public tracking endpoints; separate from the free plugin's lpmanager_nonce. */
+    const NONCE_ACTION = 'lpmanager_pro_tracking';
+
+    /** Script handle; distinct from the free plugin's former lpmanager-tracking handle (see dequeue_legacy_script). */
+    const SCRIPT_HANDLE = 'lpmanager-pro-tracking';
+
+    /** One page view's heatmap; tracking.js stops sampling at the same number. */
+    const MAX_HEATMAP_CELLS_PER_REQUEST = 600;
+
+    /** Longer time-on-page values are dropped rather than skewing the average. */
+    const MAX_ENGAGEMENT_SECONDS = 3600;
+
+    /**
+     * Signed session tokens (S1). lpmanager_pro_session issues one per page view; every recording
+     * endpoint requires it, so post IDs cannot be forged and the shared nonce alone is not enough.
+     * Nothing is stored: the token is verified by its signature.
+     */
+    const SESSION_TTL = 3600;
+
+    /** Per-session limits, enforced only with a persistent object cache (never in the database). */
+    const RATE_LIMIT_GROUP = 'lpmanager_pro_rl';
+
+    const MAX_REPEAT_EVENTS_PER_SESSION = 10;
 
     /**
      * Interaction types recorded by lpmanager_record_interaction: tracking option that enables
@@ -27,6 +58,7 @@ class Tracking_Manager {
     public static function init() {
         add_action( 'template_redirect', [ __CLASS__, 'increment_page_view' ] );
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'enqueue_tracking_scripts' ] );
+        add_action( 'wp_enqueue_scripts', [ __CLASS__, 'dequeue_legacy_script' ], PHP_INT_MAX );
         add_action( 'wp_ajax_lpmanager_record_conversion', [ __CLASS__, 'record_conversion' ] );
         add_action( 'wp_ajax_nopriv_lpmanager_record_conversion', [ __CLASS__, 'record_conversion' ] );
         add_action( 'wp_ajax_lpmanager_record_click', [ __CLASS__, 'record_click' ] );
@@ -42,6 +74,7 @@ class Tracking_Manager {
         add_action( 'wp_ajax_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         add_action( 'wp_ajax_nopriv_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         add_action( 'admin_menu', [ __CLASS__, 'maybe_add_conversions_submenu' ] );
+        add_action( 'admin_init', [ __CLASS__, 'maybe_clean_stored_link_clicks' ] );
     }
 
     /**
@@ -95,7 +128,8 @@ class Tracking_Manager {
         }
         wp_send_json_success( [
             'track'   => true,
-            'nonce'   => wp_create_nonce( 'lpmanager_nonce' ),
+            'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+            'session' => self::create_session_token( $post_id ),
             'counted' => $counted,
         ] );
     }
@@ -162,16 +196,16 @@ class Tracking_Manager {
         $post_id = get_the_ID();
         // Pro ships its own script so tracking changes do not depend on free-plugin releases.
         wp_enqueue_script(
-            'lpmanager-tracking',
+            self::SCRIPT_HANDLE,
             LP_MANAGER_PRO_PLUGIN_URL . 'assets/js/tracking.js',
             [],
             LP_MANAGER_PRO_VERSION,
             true
         );
-        wp_localize_script( 'lpmanager-tracking', 'lpmanagerTracking', [
+        wp_localize_script( self::SCRIPT_HANDLE, 'lpmanagerTracking', [
             'ajaxurl'                    => admin_url( 'admin-ajax.php', 'relative' ),
             // Fallback only: the script requests a fresh nonce on load, since this one may come from a cached page.
-            'nonce'                      => wp_create_nonce( 'lpmanager_nonce' ),
+            'nonce'                      => wp_create_nonce( self::NONCE_ACTION ),
             'postId'                     => $post_id,
             // Previews are never served from a page cache, so excluding them here is reliable.
             'countView'                  => ! empty( $opts['track_page_views'] ) && self::get_view_counting_mode() === 'client' && ! is_preview(),
@@ -189,17 +223,28 @@ class Tracking_Manager {
         ] );
     }
 
+    /**
+     * Older free-plugin releases enqueued their own tracking script as lpmanager-tracking. It has no
+     * consent gate and would double-count, so only Pro's script may run on landing pages.
+     */
+    public static function dequeue_legacy_script() {
+        if ( wp_script_is( self::SCRIPT_HANDLE, 'enqueued' ) ) {
+            wp_dequeue_script( 'lpmanager-tracking' );
+        }
+    }
+
     public static function record_conversion() {
         $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
         if ( empty( $opts['enable_conversion_tracking'] ) ) {
             wp_send_json_error( 'Conversion tracking disabled.' );
         }
-        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        check_ajax_referer( self::NONCE_ACTION, 'nonce' );
         self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
+        self::exit_if_limited( self::require_session( $post_id ), 'conversion', self::MAX_REPEAT_EVENTS_PER_SESSION );
         $conversions = (int) get_post_meta( $post_id, '_lpmanager_conversions', true );
         update_post_meta( $post_id, '_lpmanager_conversions', $conversions + 1 );
 
@@ -219,14 +264,15 @@ class Tracking_Manager {
         if ( empty( $opts['track_link_clicks'] ) ) {
             wp_send_json_error( 'Link click tracking disabled.' );
         }
-        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        check_ajax_referer( self::NONCE_ACTION, 'nonce' );
         self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-        $href    = isset( $_POST['href'] ) && is_string( $_POST['href'] ) ? esc_url_raw( substr( wp_unslash( $_POST['href'] ), 0, self::MAX_HREF_LENGTH ) ) : '';
-        $text    = isset( $_POST['text'] ) ? sanitize_text_field( wp_unslash( $_POST['text'] ) ) : '';
+        $href    = isset( $_POST['href'] ) && is_string( $_POST['href'] ) ? self::clean_href( wp_unslash( $_POST['href'] ) ) : '';
+        $text    = isset( $_POST['text'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['text'] ) ), 0, self::MAX_LABEL_LENGTH ) : '';
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
+        self::exit_if_limited( self::require_session( $post_id ), 'click', self::MAX_REPEAT_EVENTS_PER_SESSION );
         $key = self::normalize_click_key( $href, $text );
         $stored = get_option( 'lpmanager_link_clicks', [] );
         if ( ! is_array( $stored ) ) {
@@ -238,7 +284,7 @@ class Tracking_Manager {
         // Past the cap, new links still count toward the page total but get no per-link row.
         if ( isset( $stored[ $post_id ][ $key ] ) || count( $stored[ $post_id ] ) < self::MAX_LINKS_PER_PAGE ) {
             if ( ! isset( $stored[ $post_id ][ $key ] ) ) {
-                $stored[ $post_id ][ $key ] = [ 'count' => 0, 'href' => $href, 'label' => mb_substr( $text, 0, 100 ) ];
+                $stored[ $post_id ][ $key ] = [ 'count' => 0, 'href' => $href, 'label' => $text ];
             }
             $stored[ $post_id ][ $key ]['count'] = (int) $stored[ $post_id ][ $key ]['count'] + 1;
             self::save_tracking_option( 'lpmanager_link_clicks', $stored );
@@ -255,13 +301,14 @@ class Tracking_Manager {
         if ( empty( $opts['track_time_on_page'] ) && empty( $opts['track_scroll_depth'] ) ) {
             wp_send_json_error( 'Engagement tracking disabled.' );
         }
-        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        check_ajax_referer( self::NONCE_ACTION, 'nonce' );
         self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
-        $stored = get_option( 'lpmanager_engagement', [] );
+        $session = self::require_session( $post_id );
+        $stored  = get_option( 'lpmanager_engagement', [] );
         if ( ! is_array( $stored ) ) {
             $stored = [];
         }
@@ -271,7 +318,7 @@ class Tracking_Manager {
         $changed = false;
         if ( ! empty( $opts['track_time_on_page'] ) ) {
             $seconds = isset( $_POST['seconds'] ) ? absint( $_POST['seconds'] ) : 0;
-            if ( $seconds > 0 && $seconds < 86400 ) {
+            if ( $seconds > 0 && $seconds <= self::MAX_ENGAGEMENT_SECONDS && self::allow_event( $session, 'time', 1 ) ) {
                 $stored[ $post_id ]['time_sum']   = (int) $stored[ $post_id ]['time_sum'] + $seconds;
                 $stored[ $post_id ]['time_count'] = (int) $stored[ $post_id ]['time_count'] + 1;
                 $changed = true;
@@ -279,7 +326,7 @@ class Tracking_Manager {
         }
         if ( ! empty( $opts['track_scroll_depth'] ) ) {
             $depth = isset( $_POST['scroll_depth'] ) ? absint( $_POST['scroll_depth'] ) : 0;
-            if ( in_array( $depth, [ 25, 50, 75, 100 ], true ) ) {
+            if ( in_array( $depth, [ 25, 50, 75, 100 ], true ) && self::allow_event( $session, 'scroll_' . $depth, 1 ) ) {
                 $key = 'scroll_' . $depth;
                 $stored[ $post_id ][ $key ] = (int) ( $stored[ $post_id ][ $key ] ?? 0 ) + 1;
                 $changed = true;
@@ -297,7 +344,7 @@ class Tracking_Manager {
         if ( empty( $opts['track_heatmap'] ) ) {
             wp_send_json_error( 'Heatmap tracking disabled.' );
         }
-        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        check_ajax_referer( self::NONCE_ACTION, 'nonce' );
         self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
@@ -311,6 +358,7 @@ class Tracking_Manager {
         if ( empty( $cells ) ) {
             wp_send_json_success( 'No data.' );
         }
+        self::exit_if_limited( self::require_session( $post_id ), 'heatmap', 1 );
         $stored = get_option( 'lpmanager_heatmap', [] );
         if ( ! is_array( $stored ) ) {
             $stored = [];
@@ -332,12 +380,13 @@ class Tracking_Manager {
         if ( empty( $opts['track_rage_clicks'] ) ) {
             wp_send_json_error( 'Rage click tracking disabled.' );
         }
-        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        check_ajax_referer( self::NONCE_ACTION, 'nonce' );
         self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
+        self::exit_if_limited( self::require_session( $post_id ), 'rage_click', self::MAX_REPEAT_EVENTS_PER_SESSION );
         $count = (int) get_post_meta( $post_id, '_lpmanager_rage_clicks', true );
         update_post_meta( $post_id, '_lpmanager_rage_clicks', $count + 1 );
         wp_send_json_success( 'Rage click recorded.' );
@@ -352,12 +401,14 @@ class Tracking_Manager {
         if ( empty( $opts[ self::INTERACTIONS[ $type ]['option'] ] ) ) {
             wp_send_json_error( 'Interaction tracking disabled.' );
         }
-        check_ajax_referer( 'lpmanager_nonce', 'nonce' );
+        check_ajax_referer( self::NONCE_ACTION, 'nonce' );
         self::exit_if_excluded();
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
         }
+        // A CTA view happens once per page view; the other interactions can repeat.
+        self::exit_if_limited( self::require_session( $post_id ), $type, $type === 'cta_view' ? 1 : self::MAX_REPEAT_EVENTS_PER_SESSION );
         $meta_key = self::INTERACTIONS[ $type ]['meta'];
         $count    = (int) get_post_meta( $post_id, $meta_key, true );
         update_post_meta( $post_id, $meta_key, $count + 1 );
@@ -375,6 +426,70 @@ class Tracking_Manager {
             $counts[ $type ] = (int) get_post_meta( $post_id, $def['meta'], true );
         }
         return $counts;
+    }
+
+    /**
+     * Token format: "post_id.issued_at.session_id.signature". The session ID is random and lives
+     * only in the browser's memory (and briefly in a persistent object cache, if the site has one).
+     */
+    public static function create_session_token( $post_id, $now = null ) {
+        $issued_at  = $now === null ? time() : (int) $now;
+        $session_id = bin2hex( random_bytes( 8 ) );
+        return implode( '.', [ (int) $post_id, $issued_at, $session_id, self::sign_session( (int) $post_id, $issued_at, $session_id ) ] );
+    }
+
+    /**
+     * @return string|false The session ID when the token is valid for this page and not expired.
+     */
+    public static function verify_session_token( $token, $post_id, $now = null ) {
+        $now   = $now === null ? time() : (int) $now;
+        $parts = is_string( $token ) ? explode( '.', $token ) : [];
+        if ( count( $parts ) !== 4 || ! ctype_digit( $parts[0] ) || ! ctype_digit( $parts[1] ) || ! preg_match( '/^[0-9a-f]{16}$/', $parts[2] ) ) {
+            return false;
+        }
+        $issued_at = (int) $parts[1];
+        if ( (int) $parts[0] !== (int) $post_id || $issued_at > $now + 60 || $now - $issued_at > self::SESSION_TTL ) {
+            return false;
+        }
+        return hash_equals( self::sign_session( (int) $post_id, $issued_at, $parts[2] ), $parts[3] ) ? $parts[2] : false;
+    }
+
+    private static function sign_session( $post_id, $issued_at, $session_id ) {
+        return wp_hash( 'lpmanager_pro_session|' . $post_id . '|' . $issued_at . '|' . $session_id, 'nonce' );
+    }
+
+    /** Ends the request unless it carries a valid session token for this page. */
+    private static function require_session( $post_id ) {
+        $token      = isset( $_POST['session'] ) && is_string( $_POST['session'] ) ? sanitize_text_field( wp_unslash( $_POST['session'] ) ) : '';
+        $session_id = self::verify_session_token( $token, $post_id );
+        if ( ! $session_id ) {
+            wp_send_json_error( 'Invalid session.' );
+        }
+        return $session_id;
+    }
+
+    /**
+     * Whether this session may record the event again. Enforced only with a persistent object
+     * cache; without one the limit is skipped rather than stored in the database.
+     */
+    public static function allow_event( $session_id, $event, $limit ) {
+        if ( ! wp_using_ext_object_cache() ) {
+            return true;
+        }
+        $key = $session_id . ':' . $event;
+        if ( $limit === 1 ) {
+            return (bool) wp_cache_add( $key, 1, self::RATE_LIMIT_GROUP, self::SESSION_TTL );
+        }
+        wp_cache_add( $key, 0, self::RATE_LIMIT_GROUP, self::SESSION_TTL );
+        $count = wp_cache_incr( $key, 1, self::RATE_LIMIT_GROUP );
+        return $count !== false && $count <= $limit;
+    }
+
+    /** Over-limit events get a success response so the script does not retry. */
+    private static function exit_if_limited( $session_id, $event, $limit ) {
+        if ( ! self::allow_event( $session_id, $event, $limit ) ) {
+            wp_send_json_success( 'Limit reached.' );
+        }
     }
 
     /** Excluded requests get a success response so the script does not retry or log errors. */
@@ -396,6 +511,70 @@ class Tracking_Manager {
         update_option( $name, $value, false );
     }
 
+    /**
+     * Drops the query string and fragment, which can carry visitor tokens or email addresses, and
+     * caps the length so public callers cannot store large values.
+     */
+    public static function clean_href( $href ) {
+        $href = esc_url_raw( preg_replace( '/[?#].*$/s', '', (string) $href ) );
+        // Cut after escaping, which can lengthen the value by percent-encoding characters.
+        return substr( $href, 0, self::MAX_HREF_LENGTH );
+    }
+
+    /**
+     * One-time cleanup of link rows recorded before 1.0.3, which kept query strings and fragments.
+     * Runs on the first admin page load after updating. Skipped on admin-ajax, where it would race
+     * record_click's own read-then-write; cleaning is idempotent, so a second pass is safe.
+     */
+    public static function maybe_clean_stored_link_clicks() {
+        if ( wp_doing_ajax() || get_option( self::LINK_CLICKS_CLEANED_OPTION ) ) {
+            return;
+        }
+        $stored = get_option( 'lpmanager_link_clicks', [] );
+        if ( is_array( $stored ) && $stored ) {
+            self::save_tracking_option( 'lpmanager_link_clicks', self::clean_link_rows( $stored ) );
+            // A click saved between the read and the write above restores uncleaned rows; clean again.
+            wp_cache_delete( 'lpmanager_link_clicks', 'options' );
+            $stored = get_option( 'lpmanager_link_clicks', [] );
+            if ( is_array( $stored ) && $stored !== self::clean_link_rows( $stored ) ) {
+                self::save_tracking_option( 'lpmanager_link_clicks', self::clean_link_rows( $stored ) );
+            }
+        }
+        update_option( self::LINK_CLICKS_CLEANED_OPTION, 1 );
+    }
+
+    /**
+     * Cleans each row's address with clean_href(), caps its label, and merges rows that now share
+     * a key, summing their counts.
+     *
+     * @param array $stored Link rows keyed by post ID, then by click key.
+     * @return array
+     */
+    public static function clean_link_rows( array $stored ) {
+        $cleaned = [];
+        foreach ( $stored as $post_id => $rows ) {
+            if ( ! is_array( $rows ) ) {
+                continue;
+            }
+            $cleaned[ $post_id ] = [];
+            foreach ( $rows as $row ) {
+                if ( ! is_array( $row ) ) {
+                    continue;
+                }
+                $href  = self::clean_href( isset( $row['href'] ) ? $row['href'] : '' );
+                $label = mb_substr( isset( $row['label'] ) ? (string) $row['label'] : '', 0, self::MAX_LABEL_LENGTH );
+                $count = isset( $row['count'] ) ? (int) $row['count'] : 0;
+                $key   = self::normalize_click_key( $href, $label );
+                if ( isset( $cleaned[ $post_id ][ $key ] ) ) {
+                    $cleaned[ $post_id ][ $key ]['count'] += $count;
+                } else {
+                    $cleaned[ $post_id ][ $key ] = [ 'count' => $count, 'href' => $href, 'label' => $label ];
+                }
+            }
+        }
+        return $cleaned;
+    }
+
     private static function normalize_click_key( $href, $text ) {
         $norm = preg_replace( '#^tel:#i', 'tel:', $href );
         $norm = trim( $norm ) ?: $href;
@@ -414,12 +593,15 @@ class Tracking_Manager {
         echo '<p>' . esc_html__( 'This table shows phone link click conversions for each landing page.', 'landing-page-manager-pro' ) . '</p>';
         echo '<table class="widefat fixed striped">';
         echo '<thead><tr>';
-        echo '<th>' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
-        echo '<th>' . esc_html__( 'Visits', 'landing-page-manager-pro' ) . '</th>';
-        echo '<th>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</th>';
-        echo '<th>' . esc_html__( 'Conversion Rate', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th scope="col">' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th scope="col">' . esc_html__( 'Visits', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th scope="col">' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th scope="col">' . esc_html__( 'Conversion Rate', 'landing-page-manager-pro' ) . '</th>';
         echo '</tr></thead><tbody>';
         $pages = get_posts( [ 'post_type' => 'landing_page', 'posts_per_page' => -1 ] );
+        if ( ! $pages ) {
+            self::render_empty_row( 4 );
+        }
         foreach ( $pages as $page ) {
             $visits = (int) get_post_meta( $page->ID, '_lpmanager_page_views', true );
             $conversions = (int) get_post_meta( $page->ID, '_lpmanager_conversions', true );
@@ -456,11 +638,14 @@ class Tracking_Manager {
         echo '<h2>' . esc_html__( 'Interactions', 'landing-page-manager-pro' ) . '</h2>';
         echo '<p>' . esc_html__( 'CTA views count page views in which a call-to-action became visible. Form starts count the first field focused in each form per page view.', 'landing-page-manager-pro' ) . '</p>';
         echo '<table class="widefat fixed striped"><thead><tr>';
-        echo '<th>' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
+        echo '<th scope="col">' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
         foreach ( $columns as $label ) {
-            echo '<th>' . esc_html( $label ) . '</th>';
+            echo '<th scope="col">' . esc_html( $label ) . '</th>';
         }
         echo '</tr></thead><tbody>';
+        if ( ! $pages ) {
+            self::render_empty_row( count( $columns ) + 1 );
+        }
         foreach ( $pages as $page ) {
             $counts = self::get_interaction_counts( $page->ID );
             echo '<tr><td><a href="' . esc_url( get_edit_post_link( $page->ID ) ) . '">' . esc_html( get_the_title( $page ) ) . '</a></td>';
@@ -470,6 +655,10 @@ class Tracking_Manager {
             echo '</tr>';
         }
         echo '</tbody></table>';
+    }
+
+    private static function render_empty_row( $colspan ) {
+        echo '<tr><td colspan="' . esc_attr( $colspan ) . '">' . esc_html__( 'No landing pages yet.', 'landing-page-manager-pro' ) . '</td></tr>';
     }
 
     public static function maybe_add_conversions_submenu() {
