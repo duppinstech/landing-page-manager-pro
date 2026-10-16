@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Visitors on Cubot Android phones are no longer treated as bots and excluded.
+- CTA views are recorded for call-to-action buttons added after the page loads (for example by page builders or popups).
 - Recording endpoints no longer trust the posted page ID: each request must carry a signed session token for that page, which limits how far counts can be inflated or sent to the wrong page. On sites with a persistent object cache, once-per-page-view events are also limited per session.
 - Link-click rows recorded before 1.0.3, which kept query strings, are cleaned and merged on update.
 - The analytics REST endpoint's `interactions` now leaves out interaction types whose tracking is off, matching the daily series.

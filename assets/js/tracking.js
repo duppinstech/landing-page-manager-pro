@@ -298,27 +298,45 @@
                 ctaSeen = true;
                 sendInteraction('cta_view', false);
             };
-            var ctas = document.querySelectorAll(CTA_SELECTOR);
-            if (ctas.length && 'IntersectionObserver' in window) {
+            if ('IntersectionObserver' in window) {
                 var observer = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
                         if (entry.isIntersecting) {
                             markCtaSeen();
                             observer.disconnect();
+                            if (mutations) mutations.disconnect();
                         }
                     });
                 }, { threshold: 0.5 });
-                ctas.forEach(function (el) { observer.observe(el); });
-            } else if (ctas.length) {
+                var observeCtas = function (root) {
+                    if (root.matches && root.matches(CTA_SELECTOR)) observer.observe(root);
+                    if (root.querySelectorAll) {
+                        root.querySelectorAll(CTA_SELECTOR).forEach(function (el) { observer.observe(el); });
+                    }
+                };
+                observeCtas(document);
+                // CTAs inserted later (page builders, popups) are observed as they appear.
+                var mutations = 'MutationObserver' in window ? new MutationObserver(function (records) {
+                    if (ctaSeen) return;
+                    records.forEach(function (record) {
+                        record.addedNodes.forEach(function (node) {
+                            if (node.nodeType === 1) observeCtas(node);
+                        });
+                    });
+                }) : null;
+                if (mutations && document.body) mutations.observe(document.body, { childList: true, subtree: true });
+            } else {
                 var checkCta = function () {
                     if (ctaSeen) return;
-                    ctas.forEach(function (el) {
+                    document.querySelectorAll(CTA_SELECTOR).forEach(function (el) {
                         var rect = el.getBoundingClientRect();
                         if (rect.top < window.innerHeight && rect.bottom > 0) markCtaSeen();
                     });
                 };
                 window.addEventListener('scroll', checkCta, { passive: true });
                 window.addEventListener('load', checkCta);
+                // Tracking can start after load (for example after consent), so check once now too.
+                checkCta();
             }
         }
 
