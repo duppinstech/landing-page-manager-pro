@@ -31,7 +31,7 @@
 1. Ensure **Landing Page Manager** (free) is installed and active.
 2. Upload the `landing-page-manager-pro` folder to `/wp-content/plugins/`, or install via your preferred method (e.g. private repo, ZIP).
 3. Activate **Landing Page Manager Pro** in **Plugins** in the WordPress admin.
-4. On first activation, all tracking options are enabled by default. Adjust them in the main Landing Page Manager settings if needed.
+4. On first activation, all tracking options are enabled by default. Adjust them under **Landing Pages → Pro Settings → What is tracked**.
 5. Review **Landing Pages → Pro Settings**, which controls who is tracked (editors, bots, privacy signals, consent).
 
 Upgrading from 1.0.2: counts may be lower after updating, because previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted. Views on cached pages are now counted. Purge the page cache after updating or rolling back, so cached pages load the current tracking script.
@@ -48,7 +48,7 @@ Deleting the plugin removes its update cache. Turn on **Delete data on uninstall
 
 ## Configuration
 
-Tracking options (page views, link clicks, conversions, time on page, scroll depth, heatmap, rage clicks, etc.) are managed in the **Landing Page Manager** settings (provided by the free plugin). Pro reads these settings and enables the corresponding tracking and analytics.
+Tracking options (page views, link clicks, time on page, scroll depth, heatmap, rage clicks, outbound clicks, CTA views, form interactions) are managed under **Landing Pages → Pro Settings → What is tracked**. Conversions are always recorded. Before 1.0.4 these options were in the Landing Page Manager settings; Pro reads and writes the same stored values, so existing choices carry over. Code can read them with `lpmanager_pro_tracking_options()`.
 
 **Landing Pages → Pro Settings** controls whose visits are tracked, and whether deleting the plugin removes its settings. By default, logged-in users who can edit content (contributors, authors, editors, administrators), known bots or automation tools, and visitors who send Global Privacy Control or Do Not Track are excluded. Excluded visits are not counted. When a consent or cookie-banner plugin is detected, the page shows whether Pro will wait for its consent. Product names are trademarks of their respective owners and are used only to identify those plugins; no affiliation or endorsement is implied.
 

@@ -31,8 +31,11 @@ wp plugin activate landing-page-manager landing-page-manager-pro >/dev/null
 wp config set WP_DEBUG_LOG true --raw >/dev/null
 wp config set WP_DEBUG_DISPLAY false --raw >/dev/null
 curl -s -o /dev/null "$SITE/"   # applies first-activation defaults
-PID=$(wp post create --post_type=landing_page --post_status=publish --post_title="Integration Page" --porcelain)
-OTHER=$(wp post create --post_type=landing_page --post_status=publish --post_title="Other Page" --porcelain)
+PID=$(wp post create --post_type=landing_page --post_status=draft --post_title="Integration Page" --porcelain)
+OTHER=$(wp post create --post_type=landing_page --post_status=draft --post_title="Other Page" --porcelain)
+# Landing Page Manager keeps incomplete pages as drafts on publish; these bare fixtures are published directly.
+wp eval "global \$wpdb; foreach ( [ $PID, $OTHER ] as \$id ) { \$wpdb->update( \$wpdb->posts, [ 'post_status' => 'publish', 'post_name' => 'lpm-fixture-' . \$id ], [ 'ID' => \$id ] ); clean_post_cache( \$id ); }" >/dev/null
+check "fixture pages published" "publish" "$(wp post get "$PID" --field=post_status)"
 URL=$(wp post url "$PID")
 check "activation defaults applied" "1" "$(wp option get lpmanager_pro_defaults_applied)"
 

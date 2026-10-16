@@ -82,10 +82,7 @@ class Tracking_Manager {
      * tracking script counts the view (see start_session) so full-page caches do not hide views.
      */
     public static function increment_page_view() {
-        if ( ! function_exists( 'lpmanager_tracking_options' ) ) {
-            return;
-        }
-        $opts = lpmanager_tracking_options();
+        $opts = Settings::tracking_options();
         // Consent is only known in the browser, so server-side counting is skipped when it is required.
         if ( empty( $opts['track_page_views'] ) || self::get_view_counting_mode() !== 'server' || Settings::requires_consent() || Settings::is_excluded_request() ) {
             return;
@@ -117,7 +114,7 @@ class Tracking_Manager {
             // Tells the script to stop sending events for this page view.
             wp_send_json_success( [ 'track' => false, 'counted' => false ] );
         }
-        $opts    = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts    = Settings::tracking_options();
         $counted = false;
         if ( ! empty( $opts['track_page_views'] )
             && ! empty( $_POST['count_view'] )
@@ -175,10 +172,7 @@ class Tracking_Manager {
     }
 
     public static function enqueue_tracking_scripts() {
-        if ( ! function_exists( 'lpmanager_tracking_options' ) ) {
-            return;
-        }
-        $opts = lpmanager_tracking_options();
+        $opts = Settings::tracking_options();
         $needs_script = ! empty( $opts['track_page_views'] )
             || ! empty( $opts['track_link_clicks'] )
             || ! empty( $opts['enable_conversion_tracking'] )
@@ -236,7 +230,7 @@ class Tracking_Manager {
     }
 
     public static function record_conversion() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['enable_conversion_tracking'] ) ) {
             wp_send_json_error( 'Conversion tracking disabled.' );
         }
@@ -262,7 +256,7 @@ class Tracking_Manager {
     }
 
     public static function record_click() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['track_link_clicks'] ) ) {
             wp_send_json_error( 'Link click tracking disabled.' );
         }
@@ -299,7 +293,7 @@ class Tracking_Manager {
     }
 
     public static function record_engagement() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['track_time_on_page'] ) && empty( $opts['track_scroll_depth'] ) ) {
             wp_send_json_error( 'Engagement tracking disabled.' );
         }
@@ -342,7 +336,7 @@ class Tracking_Manager {
     }
 
     public static function record_heatmap() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['track_heatmap'] ) ) {
             wp_send_json_error( 'Heatmap tracking disabled.' );
         }
@@ -378,7 +372,7 @@ class Tracking_Manager {
     }
 
     public static function record_rage_click() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['track_rage_clicks'] ) ) {
             wp_send_json_error( 'Rage click tracking disabled.' );
         }
@@ -399,7 +393,7 @@ class Tracking_Manager {
         if ( ! isset( self::INTERACTIONS[ $type ] ) ) {
             wp_send_json_error( 'Invalid interaction type.' );
         }
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts[ self::INTERACTIONS[ $type ]['option'] ] ) ) {
             wp_send_json_error( 'Interaction tracking disabled.' );
         }
@@ -586,7 +580,7 @@ class Tracking_Manager {
     }
 
     public static function render_conversions_page() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['enable_conversion_tracking'] ) ) {
             echo '<div class="wrap"><h1>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</h1><p>' . esc_html__( 'Conversion tracking is currently disabled. Enable it in settings to view analytics.', 'landing-page-manager-pro' ) . '</p></div>';
             return;
@@ -665,7 +659,7 @@ class Tracking_Manager {
     }
 
     public static function maybe_add_conversions_submenu() {
-        $opts = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $opts = Settings::tracking_options();
         if ( empty( $opts['enable_conversion_tracking'] ) ) {
             return;
         }

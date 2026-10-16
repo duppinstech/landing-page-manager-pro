@@ -39,7 +39,7 @@ class Pro_Analytics {
      * Add Pro data to dashboard REST response (visits, conversions, summary).
      */
     public static function add_dashboard_pro_data( $data ) {
-        $tracking = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $tracking = Settings::tracking_options();
         $pages = get_posts( [ 'post_type' => 'landing_page', 'posts_per_page' => -1 ] );
 
         $visits_per_page = [];
@@ -89,7 +89,7 @@ class Pro_Analytics {
     }
 
     public static function get_analytics_data( $request ) {
-        $tracking = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $tracking = Settings::tracking_options();
         $client_id = (int) $request->get_param( 'client_id' );
         $template_filter = $request->get_param( 'template' );
         if ( is_string( $template_filter ) ) {
