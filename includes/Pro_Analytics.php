@@ -1,6 +1,8 @@
 <?php
 /**
  * Pro-only: analytics REST endpoint and dashboard data (views, conversions, summary).
+ *
+ * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 namespace LPManagerPro;
 
@@ -42,12 +44,14 @@ class Pro_Analytics {
 
         $visits_per_page = [];
         $conversions_per_page = [];
+        $labels = self::get_unique_page_labels( $pages );
         foreach ( $pages as $page ) {
+            $label = $labels[ $page->ID ];
             if ( ! empty( $tracking['track_page_views'] ) ) {
-                $visits_per_page[ $page->post_title ] = (int) get_post_meta( $page->ID, '_lpmanager_page_views', true );
+                $visits_per_page[ $label ] = (int) get_post_meta( $page->ID, '_lpmanager_page_views', true );
             }
             if ( ! empty( $tracking['enable_conversion_tracking'] ) ) {
-                $conversions_per_page[ $page->post_title ] = (int) get_post_meta( $page->ID, '_lpmanager_conversions', true );
+                $conversions_per_page[ $label ] = (int) get_post_meta( $page->ID, '_lpmanager_conversions', true );
             }
         }
         $data['visits_per_page'] = $visits_per_page;
@@ -119,7 +123,7 @@ class Pro_Analytics {
         $template_totals = [];
 
         foreach ( $pages as $page ) {
-            $template_slug = class_exists( 'LPManager\templates\Template_Loader' ) ? \LPManager\templates\Template_Loader::get_effective_template_for_page( $page->ID ) : 'client-template';
+            $template_slug = class_exists( 'LPManager\templates\Template_Loader' ) ? \LPManager\templates\Template_Loader::get_effective_template_for_page( $page->ID ) : 'default';
             $views = ! empty( $tracking['track_page_views'] ) ? (int) get_post_meta( $page->ID, '_lpmanager_page_views', true ) : 0;
             $conversions = ! empty( $tracking['enable_conversion_tracking'] ) ? (int) get_post_meta( $page->ID, '_lpmanager_conversions', true ) : 0;
             $clicks = ! empty( $tracking['track_link_clicks'] ) ? (int) get_post_meta( $page->ID, '_lpmanager_total_clicks', true ) : 0;
@@ -199,8 +203,8 @@ class Pro_Analytics {
             $link_clicks[] = [ 'post_id' => $pid, 'title' => $page->post_title, 'links' => array_slice( $list, 0, 20 ) ];
         }
 
-        $daily_visits = get_option( 'lpmanager_daily_visits', [] );
-        $daily_conversions = get_option( 'lpmanager_daily_conversions', [] );
+        $daily_visits = ! empty( $tracking['track_page_views'] ) ? get_option( 'lpmanager_daily_visits', [] ) : [];
+        $daily_conversions = ! empty( $tracking['enable_conversion_tracking'] ) ? get_option( 'lpmanager_daily_conversions', [] ) : [];
         if ( ! is_array( $daily_visits ) ) $daily_visits = [];
         if ( ! is_array( $daily_conversions ) ) $daily_conversions = [];
 
@@ -292,6 +296,23 @@ class Pro_Analytics {
         }
         usort( $rage_clicks, function ( $a, $b ) { return $b['count'] - $a['count']; } );
 
+        // Like the daily series, interaction types whose tracking is off are left out.
+        $enabled_types = [];
+        foreach ( Tracking_Manager::INTERACTIONS as $type => $def ) {
+            if ( ! empty( $tracking[ $def['option'] ] ) ) {
+                $enabled_types[ $type ] = true;
+            }
+        }
+        $interactions = [];
+        if ( $enabled_types ) {
+            foreach ( $pages as $page ) {
+                $interactions[] = array_merge(
+                    [ 'post_id' => $page->ID, 'title' => $page->post_title ],
+                    array_intersect_key( Tracking_Manager::get_interaction_counts( $page->ID ), $enabled_types )
+                );
+            }
+        }
+
         return new \WP_REST_Response( [
             'tracking_enabled' => [
                 'page_views'     => ! empty( $tracking['track_page_views'] ),
@@ -301,6 +322,9 @@ class Pro_Analytics {
                 'scroll_depth'   => ! empty( $tracking['track_scroll_depth'] ),
                 'heatmap'        => ! empty( $tracking['track_heatmap'] ),
                 'rage_clicks'    => ! empty( $tracking['track_rage_clicks'] ),
+                'outbound_clicks'   => ! empty( $tracking['track_outbound_clicks'] ),
+                'cta_visibility'    => ! empty( $tracking['track_cta_visibility'] ),
+                'form_interactions' => ! empty( $tracking['track_form_interactions'] ),
             ],
             'summary'           => [
                 'total_pages'      => count( $pages ),
@@ -319,11 +343,28 @@ class Pro_Analytics {
             'engagement'        => $engagement,
             'heatmap'           => $heatmap,
             'rage_clicks'       => $rage_clicks,
+            'interactions'      => $interactions,
             'clients'           => $clients_list,
             'templates'         => $templates_list,
             'client_id_filter'  => $client_id,
             'template_filter'   => $template_filter,
         ], 200 );
+    }
+
+    /**
+     * Chart labels keyed by post ID. The dashboard data is keyed by label, so pages that
+     * share a title get their ID appended instead of overwriting each other.
+     */
+    private static function get_unique_page_labels( array $pages ) {
+        $title_counts = array_count_values( array_map( function ( $p ) {
+            return (string) $p->post_title;
+        }, $pages ) );
+        $labels = [];
+        foreach ( $pages as $page ) {
+            $title = (string) $page->post_title;
+            $labels[ $page->ID ] = $title_counts[ $title ] > 1 ? sprintf( '%s (#%d)', $title, $page->ID ) : $title;
+        }
+        return $labels;
     }
 
     /** Ensures we find engagement row even when option keys are stored as strings. */

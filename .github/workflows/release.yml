@@ -1,0 +1,114 @@
+# Builds a WordPress-ready ZIP: extracting yields wp-content/plugins/landing-page-manager-pro/
+# (single top-level folder named landing-page-manager-pro — no version suffix).
+#
+# Keep the exclusion list in bin/build-zip.sh in sync when adding development-only files or directories.
+# Third-party actions are pinned to commit SHAs (comment shows the release); update them deliberately.
+#
+# Build runs with read-only permissions. Publish only receives the built artifact, attests its provenance,
+# and runs in the "release" environment (add required reviewers in GitHub → Settings → Environments).
+#
+# Ported from the Duppins Technology GitHub updater standard v1.1.0 (gravity-forms-tops). Not ported:
+# the translation-template step, because this plugin ships no languages/ folder yet.
+
+name: Release ZIP
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify tag is on main
+        run: |
+          set -euo pipefail
+          # fetch-depth: 0 above already fetched origin/main.
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag $GITHUB_REF_NAME points at a commit that is not on main."
+            exit 1
+          fi
+
+      - name: Verify tag matches plugin version
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          header=$(sed -n 's/^ \* Version:[[:space:]]*//p' landing-page-manager-pro.php | tr -d '\r')
+          constant=$(sed -n "s/^define( 'LP_MANAGER_PRO_VERSION', '\(.*\)' );/\1/p" landing-page-manager-pro.php | tr -d '\r')
+          stable=$(sed -n 's/^Stable tag:[[:space:]]*//p' readme.txt | tr -d '\r')
+          echo "tag=$tag header=$header constant=$constant stable=$stable"
+          if [ "$tag" != "$header" ] || [ "$tag" != "$constant" ] || [ "$tag" != "$stable" ]; then
+            echo "::error::Tag v$tag does not match plugin header / LP_MANAGER_PRO_VERSION / readme Stable tag."
+            exit 1
+          fi
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '7.4'
+          coverage: none
+          tools: composer:v2
+
+      - name: Lint and test before packaging
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          composer lint
+          composer phpcs
+          composer test
+
+      - name: Create landing-page-manager-pro.zip
+        run: bash bin/build-zip.sh
+
+      # Requirements block (the updater reads it so WordPress checks this release's own requirements)
+      # followed by this version's changelog section, shown under "View details". Fails if the section
+      # is missing or still marked Unreleased.
+      - name: Write release notes
+        run: bash bin/release-notes.sh "${GITHUB_REF_NAME#v}" landing-page-manager-pro.php release-notes.md
+
+      - name: Upload build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: |
+            landing-page-manager-pro.zip
+            release-notes.md
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: landing-page-manager-pro.zip
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: landing-page-manager-pro.zip
+          body_path: release-notes.md
+          generate_release_notes: true
