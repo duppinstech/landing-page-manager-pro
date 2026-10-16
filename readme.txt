@@ -24,7 +24,7 @@ Counts may be lower after updating: previews, logged-in users who can edit conte
 
 == Uninstall ==
 
-Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings, including your tracking choices. Analytics data, including Pro's analytics tables, is always kept.
+Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings, including your tracking choices. That also deletes Pro's analytics tables; the per-page totals shown in Landing Page Manager are always kept.
 
 == Changelog ==
 

@@ -267,7 +267,7 @@ class Settings {
             ],
             'delete_data_on_uninstall' => [
                 __( 'Delete data on uninstall', 'landing-page-manager-pro' ),
-                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Analytics data (the counts shown in Landing Page Manager and Pro\'s analytics tables) is kept. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.', 'landing-page-manager-pro' ),
+                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Pro\'s analytics tables (daily counts, heatmap, link clicks) are deleted too; the per-page totals shown in Landing Page Manager are kept. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.', 'landing-page-manager-pro' ),
             ],
         ];
         echo '<div class="wrap">';
@@ -350,6 +350,11 @@ class Settings {
         // Tracking toggle rows are Pro-owned since 1.0.4, so the opt-in cleanup removes them too.
         foreach ( self::TRACKING_TOGGLES as $key ) {
             delete_option( self::tracking_option_name( $key ) );
+        }
+        // Pro's analytics tables are read only by Pro (owner decision P6, 2026-10-16). The per-page
+        // totals Landing Page Manager shows stay in post meta.
+        if ( class_exists( __NAMESPACE__ . '\\Stats' ) ) {
+            Stats::drop_tables();
         }
         return true;
     }

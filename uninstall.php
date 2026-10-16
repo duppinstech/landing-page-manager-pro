@@ -18,6 +18,7 @@ delete_site_option( 'lpmanager_pro_github_release' );
 delete_site_transient( 'lpmanager_pro_github_release' );
 
 require_once __DIR__ . '/includes/Settings.php';
+require_once __DIR__ . '/includes/Stats.php';
 
 if ( is_multisite() ) {
     foreach ( get_sites( [ 'fields' => 'ids', 'number' => 0 ] ) as $lpmanager_pro_site_id ) {

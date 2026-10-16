@@ -414,6 +414,14 @@ CREATE TABLE {$links} (
         return false !== $wpdb->query( 'INSERT INTO ' . self::links_table() . ' (post_id, link_key, href, label, legacy_clicks) VALUES ' . implode( ', ', $rows ) . ' ON DUPLICATE KEY UPDATE legacy_clicks = VALUES(legacy_clicks)' );
     }
 
+    /** Drops both tables and their options. Used only by the opt-in uninstall cleanup (P6). */
+    public static function drop_tables() {
+        global $wpdb;
+        $stats = self::stats_table();
+        $links = self::links_table();
+        $wpdb->query( "DROP TABLE IF EXISTS {$stats}, {$links}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange -- Opt-in uninstall only.
+    }
+
     /** Metric name for a heatmap cell (0-99). */
     public static function heat_metric( $cell ) {
         return sprintf( 'heat_%02d', (int) $cell );

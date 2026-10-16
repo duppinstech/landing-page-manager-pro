@@ -118,6 +118,8 @@ lpm_check( 'uninstall keeps Pro settings by default', get_option( 'lpmanager_pro
 update_option( 'lpmanager_pro_settings', array_merge( \LPManagerPro\Settings::DEFAULTS, [ 'delete_data_on_uninstall' => true ] ) );
 include WP_PLUGIN_DIR . '/landing-page-manager-pro/uninstall.php';
 lpm_check( 'uninstall removes Pro options when opted in', get_option( '_lpmanager_track_heatmap' ) === false && get_option( 'lpmanager_pro_settings' ) === false && get_option( 'lpmanager_pro_defaults_applied' ) === false && get_option( 'lpmanager_pro_link_clicks_cleaned' ) === false );
+lpm_check( 'opt-in uninstall drops the analytics tables', ! $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', \LPManagerPro\Stats::stats_table() ) ) );
+\LPManagerPro\Stats::install();
 lpm_check( 'uninstall keeps shared analytics', get_option( 'lpmanager_link_clicks' ) !== false && (int) get_post_meta( $lpm_pid, '_lpmanager_page_views', true ) === 1 );
 
 echo $lpm_failed ? "FAILED: $lpm_failed check(s)\n" : "All server-side checks passed.\n";
