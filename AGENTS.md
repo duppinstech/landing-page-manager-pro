@@ -16,9 +16,9 @@ Landing Page Manager Pro is a commercial WordPress plugin, licensed under GPL-2.
 
 ## Validation
 
-- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3, checks that the header and runtime versions match, and runs the PHPUnit tests (`composer test`). The tests cover the GitHub updater, Pro Settings (bot detection, privacy signals, consent notices), and `Tracking_Manager::clean_href`; tracking handlers, REST, admin screens, the link-row cleanup, and uninstall are covered by the Docker integration checks (`bash tests/integration/run.sh`, not run in CI). No PHPCS configuration exists yet.
+- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3, checks that the header and runtime versions match, and runs the PHPUnit tests (`composer test`). The tests cover the GitHub updater, Pro Settings (bot detection, privacy signals, consent notices), and `Tracking_Manager::clean_href`; tracking handlers, REST, admin screens, the link-row cleanup, and uninstall are covered by the Docker integration checks (`bash tests/integration/run.sh`, not run in CI). PHPCS (`composer phpcs`, `phpcs.xml.dist`) runs WordPress-Extra security, i18n, and database sniffs plus PHP 7.4 compatibility, with formatting sniffs that conflict with local conventions excluded.
 - The GitHub updater (`includes/class-lpmanager-pro-github-updater.php`) is a verbatim copy of the Duppins Technology updater standard. Do not edit it here; change the reference implementation and re-port it.
-- For PHP changes, run `php -l` on each modified PHP file when PHP CLI is available.
+- For PHP changes, run `php -l` on each modified PHP file and `composer phpcs` when PHP CLI is available.
 - For behavioral changes, verify the affected behavior in a WordPress install with the free Landing Page Manager dependency active; include a missing-dependency check when loader or activation behavior changes.
 - Review the final diff for unintended files, secrets, generated ZIPs, and version/changelog inconsistencies.
 - Record checks that could not be run. Do not claim tests passed when no test suite is configured.

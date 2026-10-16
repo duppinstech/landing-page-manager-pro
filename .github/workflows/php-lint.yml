@@ -29,6 +29,8 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
       - name: Unit tests
         run: composer test
+      - name: Coding standards
+        run: composer phpcs
       - name: Check version consistency
         run: |
           header=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' landing-page-manager-pro.php | head -n 1)

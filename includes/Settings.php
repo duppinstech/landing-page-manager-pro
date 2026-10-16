@@ -225,10 +225,10 @@ class Settings {
         echo '<table class="form-table" role="presentation"><tbody>';
         foreach ( $fields as $key => $field ) {
             $id        = 'lpmanager-pro-' . str_replace( '_', '-', $key );
-            $describes = $key === 'require_consent' && $consent_status ? ' aria-describedby="' . esc_attr( $status_id ) . '"' : '';
+            $describes = $key === 'require_consent' && $consent_status;
             echo '<tr><th scope="row">' . esc_html( $field[0] ) . '</th><td>';
             echo '<label for="' . esc_attr( $id ) . '">';
-            echo '<input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( self::OPTION . '[' . $key . ']' ) . '" value="1"' . checked( $settings[ $key ], true, false ) . $describes . ' /> ';
+            echo '<input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( self::OPTION . '[' . $key . ']' ) . '" value="1"' . checked( $settings[ $key ], true, false ) . ( $describes ? ' aria-describedby="' . esc_attr( $status_id ) . '"' : '' ) . ' /> ';
             echo esc_html( $field[1] );
             echo '</label>';
             if ( $describes ) {

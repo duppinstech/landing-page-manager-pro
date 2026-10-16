@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<ruleset name="Landing Page Manager Pro">
+	<description>WordPress-Extra (security, i18n, database, and best-practice sniffs) and PHP 7.4+ compatibility. Formatting sniffs that conflict with this repository's conventions (4-space indents, short array syntax, unaligned assignments, existing class file names) are excluded.</description>
+
+	<file>landing-page-manager-pro.php</file>
+	<file>uninstall.php</file>
+	<file>includes</file>
+
+	<!-- Verbatim copy of the Duppins Technology updater standard; it is checked in its reference repository. -->
+	<exclude-pattern>includes/class-lpmanager-pro-github-updater.php</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+
+	<config name="testVersion" value="7.4-"/>
+	<config name="minimum_wp_version" value="5.9"/>
+
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress-Extra">
+		<!-- Repository conventions (see .claude/rules/code-style.md). -->
+		<exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+		<exclude name="WordPress.Arrays.MultipleStatementAlignment"/>
+		<exclude name="Generic.Formatting.MultipleStatementAlignment"/>
+		<exclude name="WordPress.Arrays.ArrayDeclarationSpacing"/>
+		<exclude name="PEAR.Functions.FunctionCallSignature"/>
+		<exclude name="Generic.ControlStructures.InlineControlStructure"/>
+		<exclude name="Generic.Formatting.DisallowMultipleStatements"/>
+		<exclude name="Squiz.Functions.MultiLineFunctionDeclaration"/>
+		<exclude name="WordPress.WhiteSpace.OperatorSpacing"/>
+		<exclude name="Universal.Operators.DisallowStandalonePostIncrementDecrement"/>
+		<exclude name="Universal.Operators.DisallowShortTernary"/>
+		<exclude name="WordPress.PHP.YodaConditions"/>
+		<!-- Class files keep their existing names; renaming them would break includes and the class_alias. -->
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="landing-page-manager-pro"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="lpmanager_pro"/>
+				<element value="LPManagerPro"/>
+				<element value="LP_MANAGER_PRO"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

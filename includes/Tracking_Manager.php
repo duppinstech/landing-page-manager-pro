@@ -108,6 +108,7 @@ class Tracking_Manager {
      * responses are sent with no-cache headers, so this request is never served from a page cache.
      */
     public static function start_session() {
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- This endpoint issues the nonce and session token; it only reads a post ID and a flag.
         $post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
         if ( ! self::is_trackable_post( $post_id ) ) {
             wp_send_json_error( 'Invalid post.' );
@@ -126,6 +127,7 @@ class Tracking_Manager {
             self::record_page_view( $post_id );
             $counted = true;
         }
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
         wp_send_json_success( [
             'track'   => true,
             'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
@@ -460,6 +462,7 @@ class Tracking_Manager {
 
     /** Ends the request unless it carries a valid session token for this page. */
     private static function require_session( $post_id ) {
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Every caller runs check_ajax_referer() first.
         $token      = isset( $_POST['session'] ) && is_string( $_POST['session'] ) ? sanitize_text_field( wp_unslash( $_POST['session'] ) ) : '';
         $session_id = self::verify_session_token( $token, $post_id );
         if ( ! $session_id ) {
