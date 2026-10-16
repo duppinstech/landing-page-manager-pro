@@ -70,6 +70,12 @@ update_option( \LPManagerPro\Stats::MIGRATION_LOCK_OPTION, time(), false );
 lpm_check( 'migration waits for a fresh lock', \LPManagerPro\Stats::migrate() === false );
 update_option( \LPManagerPro\Stats::MIGRATION_LOCK_OPTION, time() - 601, false );
 lpm_check( 'migration takes over a stale lock', \LPManagerPro\Stats::migrate() === true && get_option( \LPManagerPro\Stats::MIGRATION_LOCK_OPTION ) === false );
+// Pre-existing duplicate counter rows: only the first row is incremented, so no event is counted twice.
+add_post_meta( $lpm_pid, '_lpmanager_dup_probe', 3 );
+add_post_meta( $lpm_pid, '_lpmanager_dup_probe', 4 );
+\LPManagerPro\Stats::increment_meta( $lpm_pid, '_lpmanager_dup_probe' );
+lpm_check( 'counter update touches only the first row', get_post_meta( $lpm_pid, '_lpmanager_dup_probe' ) == [ '4', '4' ], wp_json_encode( get_post_meta( $lpm_pid, '_lpmanager_dup_probe' ) ) );
+delete_post_meta( $lpm_pid, '_lpmanager_dup_probe' );
 lpm_check( 'migration keeps the old daily series', ( \LPManagerPro\Stats::daily_series( 'views' )['2026-01-02'] ?? 0 ) === 7 );
 lpm_check( 'migration marked done', (bool) get_option( \LPManagerPro\Stats::MIGRATED_OPTION ) && get_option( 'lpmanager_pro_migration_lock' ) === false );
 

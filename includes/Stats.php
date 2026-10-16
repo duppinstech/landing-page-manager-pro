@@ -72,8 +72,15 @@ class Stats {
 
     /** Creates or upgrades the tables, then copies pre-1.0.5 data once. Cheap when up to date. */
     public static function maybe_install() {
-        if ( (int) get_option( self::DB_VERSION_OPTION ) < self::DB_VERSION && ! self::install() ) {
-            return;
+        if ( (int) get_option( self::DB_VERSION_OPTION ) < self::DB_VERSION ) {
+            // After a failed CREATE, retry on admin page loads or at most hourly, not on every tracking request.
+            $failed = (int) get_option( self::INSTALL_FAILED_OPTION );
+            if ( $failed && time() - $failed < HOUR_IN_SECONDS && ( ! is_admin() || wp_doing_ajax() ) ) {
+                return;
+            }
+            if ( ! self::install() ) {
+                return;
+            }
         }
         $migrated = get_option( self::MIGRATED_OPTION );
         if ( ! $migrated || self::needs_remigration( $migrated ) ) {
@@ -91,7 +98,10 @@ class Stats {
         }
         foreach ( [ 'lpmanager_daily_visits', 'lpmanager_daily_conversions' ] as $option ) {
             $series = get_option( $option, [] );
-            if ( is_array( $series ) && $series && max( array_keys( $series ) ) > $migrated ) {
+            $days   = array_filter( array_keys( is_array( $series ) ? $series : [] ), function ( $day ) {
+                return is_string( $day ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $day );
+            } );
+            if ( $days && max( $days ) > $migrated ) {
                 return true;
             }
         }
@@ -125,7 +135,7 @@ CREATE TABLE {$links} (
         $exists = self::table_exists( $stats ) && self::table_exists( $links );
         if ( ! $exists ) {
             // Leave the version unset so the next request tries again (for example after the host grants CREATE).
-            update_option( self::INSTALL_FAILED_OPTION, 1, false );
+            update_option( self::INSTALL_FAILED_OPTION, time(), false );
             return false;
         }
         delete_option( self::INSTALL_FAILED_OPTION );
@@ -184,7 +194,8 @@ CREATE TABLE {$links} (
      */
     public static function increment_meta( $post_id, $meta_key, $amount = 1 ) {
         global $wpdb;
-        $sql     = $wpdb->prepare( "UPDATE {$wpdb->postmeta} SET meta_value = CAST(COALESCE(NULLIF(meta_value, ''), '0') AS UNSIGNED) + %d WHERE post_id = %d AND meta_key = %s", $amount, $post_id, $meta_key );
+        // Only the first row: rows created by a first-hit race keep their insert value until merged below.
+        $sql     = $wpdb->prepare( "UPDATE {$wpdb->postmeta} SET meta_value = CAST(COALESCE(NULLIF(meta_value, ''), '0') AS UNSIGNED) + %d WHERE post_id = %d AND meta_key = %s ORDER BY meta_id LIMIT 1", $amount, $post_id, $meta_key );
         $updated = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared above.
         if ( ! $updated ) {
             if ( ! add_post_meta( $post_id, $meta_key, (int) $amount, true ) ) {
@@ -365,8 +376,9 @@ CREATE TABLE {$links} (
 
         if ( $ok ) {
             update_option( self::MIGRATED_OPTION, self::today(), true );
+            delete_option( self::MIGRATION_LOCK_OPTION );
         }
-        delete_option( self::MIGRATION_LOCK_OPTION );
+        // On failure the lock stays, so the next attempt waits ten minutes instead of running on every request.
         return $ok;
     }
 
