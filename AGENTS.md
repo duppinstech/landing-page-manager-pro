@@ -2,7 +2,7 @@
 
 ## Project
 
-Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppins / Duppins Technology. It extends the separately maintained Landing Page Manager plugin. See [intent.md](intent.md) and [LICENSE.md](LICENSE.md).
+Landing Page Manager Pro is a commercial WordPress plugin, licensed under GPL-2.0-or-later from 1.0.3, owned by Duppins Technology (copyright holder); Odell Duppins is the author. It extends the separately maintained Landing Page Manager plugin. See [intent.md](intent.md) and [LICENSE.md](LICENSE.md).
 
 ## Working Rules
 
@@ -16,12 +16,13 @@ Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppin
 
 ## Validation
 
-- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3, checks that the header and runtime versions match, and runs the PHPUnit tests (`composer test`). The tests cover only the GitHub updater; no PHPCS configuration exists yet.
+- CI (`.github/workflows/php-lint.yml`) runs `php -l` on PHP 7.4 and 8.3, checks that the header and runtime versions match, and runs the PHPUnit tests (`composer test`). The tests cover the GitHub updater, Pro Settings (bot detection, privacy signals, consent notices), and `Tracking_Manager::clean_href`; tracking handlers and REST need manual WordPress checks. No PHPCS configuration exists yet.
 - The GitHub updater (`includes/class-lpmanager-pro-github-updater.php`) is a verbatim copy of the Duppins Technology updater standard. Do not edit it here; change the reference implementation and re-port it.
 - For PHP changes, run `php -l` on each modified PHP file when PHP CLI is available.
 - For behavioral changes, verify the affected behavior in a WordPress install with the free Landing Page Manager dependency active; include a missing-dependency check when loader or activation behavior changes.
 - Review the final diff for unintended files, secrets, generated ZIPs, and version/changelog inconsistencies.
 - Record checks that could not be run. Do not claim tests passed when no test suite is configured.
+- After development and validation, run the department review (`/department-review`, see [workflows/department-review.md](workflows/department-review.md)): security, QA, legal, privacy, finance, product, marketing, support, and release agents in `.claude/agents/`. Fix blocking findings; the owner decides pricing, legal wording, and data-collection questions.
 
 ## Git and Releases
 
@@ -35,4 +36,5 @@ Landing Page Manager Pro is a proprietary WordPress plugin owned by Odell Duppin
 - [WordPress security](.claude/rules/wordpress-security.md)
 - [Validation](.claude/rules/validation.md)
 - [Release process](.claude/rules/release-process.md)
+- [Department review](workflows/department-review.md)
 - [Current plan](plan.md)

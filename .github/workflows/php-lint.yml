@@ -33,5 +33,6 @@ jobs:
         run: |
           header=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' landing-page-manager-pro.php | head -n 1)
           runtime=$(sed -n "s/.*define( 'LP_MANAGER_PRO_VERSION', '\([^']*\)'.*/\1/p" landing-page-manager-pro.php | head -n 1)
-          echo "Header: $header, runtime: $runtime"
-          test -n "$header" && test "$header" = "$runtime"
+          stable=$(sed -n 's/^Stable tag:[[:space:]]*\([^[:space:]]*\).*/\1/p' readme.txt | head -n 1)
+          echo "Header: $header, runtime: $runtime, readme.txt Stable tag: $stable"
+          test -n "$header" && test "$header" = "$runtime" && test "$header" = "$stable"
