@@ -6,4 +6,5 @@
 4. Add or identify regression coverage. Use manual WordPress checks where automation is unavailable.
 5. Run the narrowest useful validation and inspect the final diff.
 6. Update documentation and `CHANGELOG.md` when behavior visible to users changes.
-7. Report implementation, checks, and remaining risks. Release only with explicit authorization.
+7. Run the [department review](department-review.md) (`/department-review`); fix blocking findings and bring owner decisions to the owner.
+8. Report implementation, checks, review outcome, and remaining risks. Release only with explicit authorization.

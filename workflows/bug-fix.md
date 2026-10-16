@@ -6,3 +6,4 @@
 4. Make the smallest correction that fixes the cause without changing unrelated behavior.
 5. Run the focused check, inspect the diff, and note unverified cases.
 6. Update the changelog when the fix affects released user behavior.
+7. Run the [department review](department-review.md) (`/department-review`) before reporting the fix as done.

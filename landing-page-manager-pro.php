@@ -1,20 +1,27 @@
 <?php
 /**
  * Plugin Name: Landing Page Manager Pro
- * Plugin URI: https://github.com/oduppinsjr/landing-page-manager-pro
- * Description: Unlocks analytics, conversion tracking, and click-through rates for Landing Page Manager.
- * Version: 1.0.2
+ * Plugin URI: https://github.com/duppinstech/landing-page-manager-pro
+ * Description: Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outbound clicks, CTA views, and form tracking for Landing Page Manager, with bot and internal-traffic exclusion and privacy and consent controls.
+ * Version: 1.0.3
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: Odell Duppins / Duppins Technology
  * Author URI: https://duppinstech.com
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: landing-page-manager-pro
  * Requires Plugins: landing-page-manager
+ * Update URI: https://github.com/duppinstech/landing-page-manager-pro
+ *
+ * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
+
+define( 'LP_MANAGER_PRO_VERSION', '1.0.3' );
 
 if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_PATH' ) ) {
     define( 'LP_MANAGER_PRO_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -23,6 +30,20 @@ if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_PATH' ) ) {
 if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_URL' ) ) {
     define( 'LP_MANAGER_PRO_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 }
+
+require_once __DIR__ . '/includes/class-lpmanager-pro-github-updater.php';
+
+// Updates from GitHub Releases. Booted at load, before the dependency check, so WP-Cron and background
+// auto-updates see releases. Disable with define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true ).
+LPManager_Pro_GitHub_Updater::boot(
+    [
+        'file'    => __FILE__,
+        'version' => LP_MANAGER_PRO_VERSION,
+        'owner'   => 'duppinstech',
+        'repo'    => 'landing-page-manager-pro',
+        'prefix'  => 'lpmanager_pro',
+    ]
+);
 
 /**
  * Pro loader: only the real Pro plugin defines this. Prevents bypass via snippet.
@@ -59,15 +80,12 @@ add_action( 'plugins_loaded', function () {
         return;
     }
     define( 'LP_MANAGER_PRO_LOADED', true );
-    define( 'LP_MANAGER_PRO_VERSION', '1.0.2' );
 
     $pro_path = plugin_dir_path( __FILE__ );
-    require_once $pro_path . 'includes/Update_Checker.php';
     require_once $pro_path . 'includes/Settings.php';
     require_once $pro_path . 'includes/Tracking_Manager.php';
     require_once $pro_path . 'includes/Pro_Analytics.php';
 
-    LPManagerPro\Update_Checker::init();
     LPManagerPro\Settings::init();
     LPManagerPro\Tracking_Manager::init();
     LPManagerPro\Pro_Analytics::init();

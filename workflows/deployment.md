@@ -5,17 +5,18 @@ This repository distributes the plugin through GitHub Releases. Deployment means
 ## Prepare
 
 - [ ] Confirm the release scope and version.
-- [ ] Update `CHANGELOG.md` and keep the plugin header and runtime version consistent.
-- [ ] Run available PHP syntax and behavior checks; document unavailable automation.
-- [ ] Commit the release changes, then run `bin/build-zip.sh` (it refuses mismatched header/runtime versions). Inspect the listed archive contents: a single `landing-page-manager-pro/` folder with the entry point and `includes/`, and no development files.
+- [ ] Update `CHANGELOG.md` and keep the plugin header `Version`, `LP_MANAGER_PRO_VERSION`, and the `readme.txt` `Stable tag` identical. The release workflow fails on a tag that does not match all three, on a tag that is not on `main`, and when `CHANGELOG.md` has no dated `## [x.y.z]` section for the version (`bash bin/release-notes.sh <version> landing-page-manager-pro.php` checks this locally).
+- [ ] Run `composer lint` and `composer test`, plus available behavior checks; document unavailable automation.
+- [ ] Commit the release changes, then run `bash bin/build-zip.sh`. Inspect the listed archive contents: a single `landing-page-manager-pro/` folder with the entry point, `includes/`, `assets/`, `uninstall.php`, and `readme.txt`, and no development files.
 - [ ] Install the ZIP on a clean supported WordPress site with the free dependency active; verify activation and the changed behavior.
 - [ ] Check the missing-dependency behavior when loader or activation behavior changed.
-- [ ] Verify the GitHub release asset is compatible with the existing update checker: the asset name contains `landing-page-manager-pro` and ends in `.zip`, and the tag is `v<version>`.
+- [ ] Confirm the repository is public, or that another release channel has been chosen. The updater does not support private repositories, so sites get a 404.
+- [ ] The tag is `v<version>`. `.github/workflows/release.yml` builds the ZIP and attaches it as `landing-page-manager-pro.zip`, the only asset name the updater installs.
 - [ ] Review the complete diff, tag name, release notes, backup, and rollback plan.
 
 ## Publish and Verify
 
-- [ ] Obtain explicit owner approval before pushing a release tag or publishing a GitHub Release.
+- [ ] Obtain explicit owner approval before pushing a release tag or publishing a GitHub Release. Pushing a `v*` tag publishes a release automatically.
 - [ ] Publish the approved release and package; do not include secrets or unintended repository files.
 - [ ] Verify installation or update from the published release on a test site.
 - [ ] Record the release URL, version, verification result, and any follow-up in `memory/progress.md`.

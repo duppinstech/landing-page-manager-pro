@@ -1,30 +1,16 @@
 #!/usr/bin/env bash
-# Build the release ZIP from committed files (HEAD, or the ref given as $1).
-# Output: landing-page-manager-pro-<version>.zip with a single landing-page-manager-pro/ folder.
-# Files marked export-ignore in .gitattributes are left out.
+# Build landing-page-manager-pro.zip from tracked files only, excluding development files.
+# Used by .github/workflows/release.yml; run locally with `bash bin/build-zip.sh` to inspect the package.
 set -euo pipefail
 
-cd "$(git rev-parse --show-toplevel)"
-ref="${1:-HEAD}"
-slug="landing-page-manager-pro"
-main="$(git show "$ref:$slug.php")"
+cd "$(dirname "$0")/.."
+rm -rf build landing-page-manager-pro.zip
+mkdir -p build/landing-page-manager-pro
 
-version="$(printf '%s\n' "$main" | sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -n 1)"
-runtime="$(printf '%s\n' "$main" | sed -n "s/.*define( 'LP_MANAGER_PRO_VERSION', '\([^']*\)'.*/\1/p" | head -n 1)"
+# Tracked files only (never local settings, vendor/, or untracked scratch files), minus dev-only paths.
+git ls-files -z \
+  | grep -zvE '^(\.github/|\.claude/|tests/|bin/|docs/|tools/|workflows/|memory/|meeting-notes/|\.gitignore$|\.gitattributes$|AGENTS\.md$|CLAUDE\.md$|CONTRIBUTING\.md$|intent\.md$|plan\.md$|composer\.(json|lock)$|phpcs\.xml\.dist$|phpunit\.xml\.dist$)' \
+  | xargs -0 -I{} cp --parents {} build/landing-page-manager-pro/
 
-if [ -z "$version" ]; then
-    echo "Could not read the Version header from $slug.php at $ref." >&2
-    exit 1
-fi
-if [ "$version" != "$runtime" ]; then
-    echo "Version header ($version) does not match LP_MANAGER_PRO_VERSION ($runtime)." >&2
-    exit 1
-fi
-if [ "$ref" = "HEAD" ] && [ -n "$(git status --porcelain)" ]; then
-    echo "Warning: uncommitted changes are not included in the package." >&2
-fi
-
-out="$slug-$version.zip"
-git archive --format=zip --prefix="$slug/" -o "$out" "$ref"
-echo "Built $out from $ref:"
-unzip -l "$out"
+( cd build && zip -qr9 ../landing-page-manager-pro.zip landing-page-manager-pro )
+unzip -l landing-page-manager-pro.zip

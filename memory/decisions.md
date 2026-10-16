@@ -19,6 +19,13 @@ Record durable project decisions here using this format:
 - **Decision:** Release ZIPs are built with `git archive` (`bin/build-zip.sh`) and exclude development files through `.gitattributes`.
 - **Reason:** Repeatable packages, and GitHub zipballs (the updater fallback) get the same exclusions.
 - **Impact:** Uncommitted changes are never packaged; commit before building.
+- **Superseded** by "Adopt the GitHub updater standard" below. The build now uses `git ls-files` with an exclusion list, and zipballs are never installed.
+
+## 2026-10-14: Adopt the GitHub updater standard
+
+- **Decision:** Replace `LPManagerPro\Update_Checker` with a verbatim copy of the Duppins Technology GitHub updater standard v1.0.0 (`LPManager_Pro_GitHub_Updater`, owner `duppinstech`, prefix `lpmanager_pro`), plus its release workflow and build script.
+- **Reason:** One shared, tested updater across Duppins Technology plugins, with no drift. The class is global, not namespaced, because the reference uses unqualified `stdClass` and `WP_Error`, which would need edits inside a namespace.
+- **Impact:** Only the `landing-page-manager-pro.zip` release asset installs. The manual "Check for updates" link and two filters are removed. The updater cannot read private repositories, and this repository is private, so release delivery is blocked until the owner decides (plan U2).
 
 ## 2026-10-14: Count views and refresh nonces from the browser
 

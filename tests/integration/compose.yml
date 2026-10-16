@@ -1,0 +1,44 @@
+# Disposable WordPress for integration checks (see README.md in this folder). Fake data only.
+# LPM_FREE_PLUGIN_PATH: path to a Landing Page Manager checkout (default: a sibling of this repository).
+# LPM_TEST_PORT: local port for the site (default 8089).
+name: lpm-pro-integration
+
+services:
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: integration-root
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: wordpress
+      MARIADB_PASSWORD: integration-pass
+    tmpfs:
+      - /var/lib/mysql
+
+  wp:
+    image: wordpress:php8.2-apache
+    depends_on: [db]
+    ports:
+      - "127.0.0.1:${LPM_TEST_PORT:-8089}:80"
+    environment: &wpenv
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: integration-pass
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: "1"
+    volumes: &wpvolumes
+      - wp:/var/www/html
+      - "${LPM_FREE_PLUGIN_PATH:-../../../landing-page-manager}:/var/www/html/wp-content/plugins/landing-page-manager:ro"
+      - "../..:/var/www/html/wp-content/plugins/landing-page-manager-pro:ro"
+      - "./:/opt/lpm-integration:ro"
+
+  cli:
+    image: wordpress:cli-php8.2
+    depends_on: [wp]
+    user: "33:33"
+    environment: *wpenv
+    volumes: *wpvolumes
+    entrypoint: ["wp"]
+    profiles: ["cli"]
+
+volumes:
+  wp:

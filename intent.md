@@ -6,7 +6,7 @@ Provide the premium analytics and tracking extension for Landing Page Manager wh
 
 ## Product Boundaries
 
-- This repository contains only the proprietary Pro plugin.
+- This repository contains only the Pro plugin, licensed under GPL-2.0-or-later from 1.0.3; revenue comes from license keys, updates, and support.
 - The free Landing Page Manager plugin remains independently maintained and must be installed and active for Pro functionality.
 - Preserve existing user data, settings, integrations, and documented API behavior unless an intentional migration is part of the work.
 - Keep tracking behavior secure, privacy-conscious, and consistent with WordPress capability, nonce, sanitization, and escaping conventions.
@@ -22,4 +22,4 @@ Provide the premium analytics and tracking extension for Landing Page Manager wh
 
 ## Ownership
 
-Source ownership remains with Odell Duppins / Duppins Technology. See [LICENSE.md](LICENSE.md) for the terms governing use and distribution.
+Source ownership remains with Odell Duppins, doing business as Duppins Technology, who holds the copyright. See [LICENSE.md](LICENSE.md) for the terms governing use and distribution.
