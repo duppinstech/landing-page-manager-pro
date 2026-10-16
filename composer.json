@@ -2,7 +2,7 @@
 	"name": "duppinstech/landing-page-manager-pro",
 	"description": "Landing Page Manager Pro (WordPress plugin). Composer is used for development tooling only; the plugin has no runtime Composer dependencies.",
 	"type": "wordpress-plugin",
-	"license": "proprietary",
+	"license": "GPL-2.0-or-later",
 	"authors": [
 		{
 			"name": "Odell Duppins",
