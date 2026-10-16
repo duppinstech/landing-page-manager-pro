@@ -19,6 +19,10 @@ Updates are delivered through GitHub Releases of duppinstech/landing-page-manage
 = 1.0.3 =
 Counts may be lower after updating: previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted, while views on cached pages now are. Review Landing Pages > Pro Settings, and purge the page cache after updating. Custom tracking code must now send a session token. Stored link clicks that differ only by query string are merged once.
 
+== Uninstall ==
+
+Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings. Analytics counts are always kept, because Landing Page Manager uses them too.
+
 == Changelog ==
 
 See CHANGELOG.md.

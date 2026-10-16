@@ -38,19 +38,19 @@ Upgrading from 1.0.2: counts may be lower after updating, because previews, logg
 
 ## Building a Release Package
 
-Run `bash bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pro.zip` (ignored by Git) from tracked files, with a single `landing-page-manager-pro/` folder and no development files. Pushing a `v*` tag runs `.github/workflows/release.yml`, which checks the tag against the plugin version, runs lint and tests, and attaches the ZIP to the GitHub release. See [workflows/deployment.md](workflows/deployment.md).
+Run `bash bin/build-zip.sh` from a clean checkout. It writes `landing-page-manager-pro.zip` (ignored by Git) from tracked files, with a single `landing-page-manager-pro/` folder and no development files. Pushing a `v*` tag runs `.github/workflows/release.yml`, which checks that the tag is on `main` and matches the plugin version, requires a dated CHANGELOG section for the version, runs lint, PHPCS, and tests, and attaches the ZIP with build provenance to the GitHub release. See [workflows/deployment.md](workflows/deployment.md).
 
 ## Updates
 
 Pro updates itself from the GitHub Releases of `duppinstech/landing-page-manager-pro` (the Duppins Technology GitHub updater standard). **Dashboard → Updates → Check again** forces a check. To turn updates off, add `define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true );` to `wp-config.php`. Sites can only download releases while the repository is public. Update checks contact `api.github.com`, which sees the site's IP address; GitHub's terms and privacy statement apply.
 
-Deleting the plugin removes its update cache. Turn on **Delete data on uninstall** in Pro Settings to also remove Pro's own settings and options. Analytics counts are always kept, because Landing Page Manager uses them too, so a reinstall keeps your history.
+Deleting the plugin removes its update cache. Turn on **Delete data on uninstall** in Pro Settings to also remove Pro's own settings and options. Analytics counts are always kept, because Landing Page Manager uses them too, so a reinstall keeps your history. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.
 
 ## Configuration
 
 Tracking options (page views, link clicks, conversions, time on page, scroll depth, heatmap, rage clicks, etc.) are managed in the **Landing Page Manager** settings (provided by the free plugin). Pro reads these settings and enables the corresponding tracking and analytics.
 
-**Landing Pages → Pro Settings** controls whose visits are tracked. By default, logged-in users who can edit content (contributors, authors, editors, administrators), known bots or automation tools, and visitors who send Global Privacy Control or Do Not Track are excluded. Excluded visits are not counted. When a consent or cookie-banner plugin is detected, the page shows whether Pro will wait for its consent. Product names are trademarks of their respective owners and are used only to identify those plugins; no affiliation or endorsement is implied.
+**Landing Pages → Pro Settings** controls whose visits are tracked, and whether deleting the plugin removes its settings. By default, logged-in users who can edit content (contributors, authors, editors, administrators), known bots or automation tools, and visitors who send Global Privacy Control or Do Not Track are excluded. Excluded visits are not counted. When a consent or cookie-banner plugin is detected, the page shows whether Pro will wait for its consent. Product names are trademarks of their respective owners and are used only to identify those plugins; no affiliation or endorsement is implied.
 
 ## Filters
 

@@ -18,6 +18,8 @@ jobs:
         php: ['7.4', '8.3']
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
@@ -31,6 +33,13 @@ jobs:
         run: composer test
       - name: Coding standards
         run: composer phpcs
+      # Same script the release workflow runs: fails if the current version has no dated changelog section.
+      - name: Release notes for the current version
+        if: matrix.php == '8.3'
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^ \* Version:[[:space:]]*//p' landing-page-manager-pro.php | tr -d '\r')
+          bash bin/release-notes.sh "$version" landing-page-manager-pro.php "$RUNNER_TEMP/release-notes.md"
       - name: Check version consistency
         run: |
           header=$(sed -n 's/^[[:space:]]*\*[[:space:]]*Version:[[:space:]]*\([^[:space:]]*\).*/\1/p' landing-page-manager-pro.php | head -n 1)

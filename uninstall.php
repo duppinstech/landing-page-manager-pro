@@ -4,6 +4,8 @@
  *
  * The GitHub updater cache is always removed. Pro's own settings are removed only on sites where
  * "Delete data on uninstall" is on; analytics data shared with Landing Page Manager is always kept.
+ *
+ * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {

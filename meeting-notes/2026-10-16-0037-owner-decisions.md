@@ -6,8 +6,7 @@
 
 | Item | Question | Decision |
 | --- | --- | --- |
-| C1 | Licensing channel for standalone sales | Defer licensing; sell through managed services for now |
-| C1 | License keys for managed client sites | Agency license at no fee, once licensing exists |
+| C1 | Licensing channel and client licenses | Defer licensing; details recorded outside the repository (redacted 2026-10-16 under the confidentiality rule) |
 | U2 | Release channel while private | Make this repository public — **done** |
 | L3 | Client name in Git history | Rewrite history first — **done**: all branches and tags rewritten and force-pushed; v1.0.1 and v1.0.2 release ZIPs replaced with copies differing only in the fallback slug |
 | L7 | Cached pre-rewrite commits on GitHub | Go public now and ask GitHub Support to purge (owner sends the request) |

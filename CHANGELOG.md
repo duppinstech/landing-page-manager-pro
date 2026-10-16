@@ -4,7 +4,7 @@ All notable changes to Landing Page Manager Pro are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [1.0.3] - Unreleased
+## [1.0.3] - 2026-10-16
 
 ### Highlights
 
@@ -57,7 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - WordPress's auto-update toggle is now available for the plugin.
 - `Requires at least: 5.9` and `Requires PHP: 7.4` plugin headers.
 - Privacy options on Pro Settings. *Honor privacy signals* (on by default) stops tracking visitors whose browser sends Global Privacy Control or Do Not Track. *Require consent* (off by default) makes tracking wait for WP Consent API "statistics" consent or `window.lpmanagerPro.grantConsent()`. Pro registers with the WP Consent API and adds suggested privacy-policy text under Settings → Privacy. New filter: `lpmanager_pro_require_consent`.
-- **Delete data on uninstall** option on Pro Settings (off by default). When on, deleting the plugin also removes Pro's own settings and options on that site (each site of a multisite network decides for itself). Analytics counts shared with Landing Page Manager are always kept.
+- **Delete data on uninstall** option on Pro Settings (off by default). When on, deleting the plugin also removes Pro's own settings and options on that site (each site of a multisite network decides for itself). Analytics counts shared with Landing Page Manager are always kept. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.
 - Pro Settings shows whether a consent or cookie-banner plugin (Complianz, CookieYes, Cookiebot, and others) is active and whether Pro will wait for its consent, and explains how the exclusions affect counts. It also confirms when settings are saved.
 - The Conversions and Interactions tables show a message when there are no landing pages.
 - **Landing Pages → Pro Settings** page with tracking exclusions, both on by default: logged-in users who can edit content, and known bots or automation tools (including requests with no user agent). Excluded visitors are not tracked at all. Add custom rules with the `lpmanager_pro_exclude_request` filter.
@@ -65,13 +65,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Plugin updates now use the Duppins Technology GitHub updater standard v1.0.0 (`LPManager_Pro_GitHub_Updater`) and come from the GitHub Releases of `duppinstech/landing-page-manager-pro`. The `Update URI` header stops WordPress.org from offering updates for this slug.
+- Plugin updates now use the Duppins Technology GitHub updater standard v1.1.0 (`LPManager_Pro_GitHub_Updater`) and come from the GitHub Releases of `duppinstech/landing-page-manager-pro`. The `Update URI` header stops WordPress.org from offering updates for this slug.
   - The updater loads with the plugin, so WP-Cron and background auto-updates see new releases, even while the free plugin is inactive.
   - Only the release asset `landing-page-manager-pro.zip` is installed (or a release's only `.zip` asset), never a source zipball.
   - Results are cached for 6 hours, then rechecked with `If-None-Match`. Failures wait 1 hour, and GitHub rate limits wait until their reset (at most 1 day).
   - The "Check for updates" plugin action link is removed. Use **Dashboard → Updates → Check again** instead.
   - The `lpmanager_pro_github_releases_api_url` and `lpmanager_pro_github_update_package_url` filters are removed. New filters are `lpmanager_pro_github_updater_config` and `lpmanager_pro_github_release_http_args`. Define `LPMANAGER_PRO_DISABLE_GITHUB_UPDATER` as `true` to turn updates off.
-  - The cache moved from the `lpmanager_pro_github_release` site transient to the site option of the same name. A new `uninstall.php` deletes both and leaves tracking data in place.
+  - The cache moved from the `lpmanager_pro_github_release` site transient to the site option of the same name. A new `uninstall.php` deletes both and leaves tracking data in place; Pro's own settings are also removed when **Delete data on uninstall** is on (see Added).
 - Page views are now counted by the tracking script, through a new `lpmanager_pro_session` request on page load, instead of on `template_redirect`. Cached pages are now counted, and visitors without JavaScript (mostly bots) no longer are, so view counts may shift after updating. With the new default exclusions (see Added), visits by editors, administrators, and bots also stop being counted. Use the `lpmanager_pro_page_view_counting` filter (`'server'`) to restore the previous behavior. `lpmanager_pro_should_count_page_view` still applies in both modes.
 - Pro now ships its own front-end tracking script instead of loading the free plugin's `assets/js/tracking.js`. It has no jQuery dependency and uses `navigator.sendBeacon` for data sent as the visitor leaves, so those requests are not cancelled by navigation.
 - Heatmap mouse samples are throttled to one per 100 ms, so new heatmap counts are lower in absolute terms than before; the relative distribution is unaffected.
@@ -80,7 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Licensed under GPL-2.0-or-later** from this version (earlier versions were proprietary). The full text ships as `license.txt`. The product names are not licensed under the GPL, and license keys, updates, and support are provided under a separate agreement with Duppins Technology. LICENSE.md keeps a warranty disclaimer and limitation of liability.
 - The plugin description now lists all tracking features.
 - Copyright notices name Odell Duppins (d/b/a Duppins Technology), the copyright holder.
-- Release notes under "View details" now include this version's changelog section after the requirements. Releases are built with read-only permissions, published from `main` only, and carry signed build provenance (updater standard v1.1.0).
+- "View details" now shows this version's changes after the requirements.
 - `Tracking_Manager` moved to the `LPManagerPro` namespace. `LPManager\admin\Tracking_Manager` remains as an alias.
 
 ## [1.0.2] - 2026-03-09

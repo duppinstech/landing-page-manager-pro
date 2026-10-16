@@ -21,8 +21,10 @@ cleanup() { [ "${KEEP:-0}" = 1 ] || docker compose down -v >/dev/null 2>&1; }
 trap cleanup EXIT
 
 docker compose up -d >/dev/null 2>&1 || { echo "docker compose up failed"; exit 1; }
-for _ in $(seq 1 40); do curl -s -o /dev/null "$SITE/wp-login.php" && break; sleep 2; done
+# -f treats the "Error establishing a database connection" page (HTTP 500) as not ready.
+for _ in $(seq 1 60); do curl -sf -o /dev/null "$SITE/wp-admin/install.php" && break; sleep 2; done
 wp core install --url="$SITE" --title=Integration --admin_user=admin --admin_password=integration-admin --admin_email=admin@example.test --skip-email >/dev/null
+docker compose run --rm -T cli core is-installed >/dev/null 2>&1 || { echo "FAIL WordPress did not install"; exit 1; }
 
 check "missing dependency blocks activation" "requires" "$(docker compose run --rm -T cli plugin activate landing-page-manager-pro 2>&1)"
 wp plugin activate landing-page-manager landing-page-manager-pro >/dev/null
@@ -59,7 +61,20 @@ check "Global Privacy Control honored" '"track":false' "$(post -H 'Sec-GPC: 1' -
 check "Cubot phone tracked" '"track":true' "$(curl -s -A 'Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36' -d "action=lpmanager_pro_session&post_id=$PID&count_view=0" "$AJAX")"
 check "unpublished page rejected" "Invalid post" "$(post -d "action=lpmanager_pro_session&post_id=999999&count_view=1")"
 
-docker compose run --rm -T cli eval-file /opt/lpm-integration/checks.php "$PID" 2>/dev/null | tr -d '\r' | tee /tmp/lpm-checks.$$ ; grep -q '^FAIL' /tmp/lpm-checks.$$ && FAILED=$((FAILED + 1)); rm -f /tmp/lpm-checks.$$
+docker compose run --rm -T cli eval-file /opt/lpm-integration/checks.php "$PID" 2>/dev/null | tr -d '\r' | tee /tmp/lpm-checks.$$
+grep -q '^FAIL' /tmp/lpm-checks.$$ && FAILED=$((FAILED + 1))
+# A crash before the summary line would otherwise hide every server-side check.
+grep -q '^All server-side checks passed' /tmp/lpm-checks.$$ || { grep -q '^FAILED' /tmp/lpm-checks.$$ || { echo "FAIL server-side checks did not complete"; FAILED=$((FAILED + 1)); }; }
+rm -f /tmp/lpm-checks.$$
+
+# Real uninstall through WP-CLI (plugin files are mounted read-only, so they are not deleted).
+wp plugin activate landing-page-manager-pro >/dev/null
+wp option update lpmanager_pro_settings '{"delete_data_on_uninstall":true}' --format=json >/dev/null
+wp option update lpmanager_pro_defaults_applied 1 >/dev/null
+wp plugin deactivate landing-page-manager-pro >/dev/null
+check "wp plugin uninstall runs" "Success" "$(docker compose run --rm -T cli plugin uninstall landing-page-manager-pro --skip-delete 2>&1)"
+check "real uninstall removes Pro settings when opted in" "MISSING" "$(wp option get lpmanager_pro_settings >/dev/null 2>&1 && echo PRESENT || echo MISSING)"
+check "real uninstall keeps shared analytics" "PRESENT" "$(wp option get lpmanager_link_clicks >/dev/null 2>&1 && echo PRESENT || echo MISSING)"
 
 LOG=$(docker compose exec -T wp sh -c 'cat /var/www/html/wp-content/debug.log 2>/dev/null | grep -i "landing-page-manager-pro" || true')
 check "no PHP notices or warnings from Pro" "" "" ; [ -n "$LOG" ] && { echo "FAIL debug.log: ${LOG:0:300}"; FAILED=$((FAILED + 1)); }

@@ -26,3 +26,6 @@ wp-config.local.php
 /dist/
 /build/
 *.zip
+
+# Release body written by bin/release-notes.sh
+release-notes.md
