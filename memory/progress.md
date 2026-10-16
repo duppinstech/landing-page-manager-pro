@@ -17,4 +17,6 @@ Keep only current, durable progress notes here. Move completed milestones to `CH
 - **Next:** owner updates managed 1.0.2 sites by ZIP once; then R10 (free plugin display) and the approved roadmap (F6, F5, F7/F8, F9/F11).
 - **Released:** v1.0.4, https://github.com/duppinstech/landing-page-manager-pro/releases/tag/v1.0.4 (tag on `main` at a520afc, PR #4), after Landing Page Manager v1.0.7. Tracking options now live in Pro Settings; new Pro Analytics screen; Conversions folded into it. 1.0.3 → 1.0.4 auto-update verified on a test site.
 - **Next:** owner updates any remaining 1.0.2 sites by ZIP (B32), then confirms so the free plugin can drop its tracking.js; then F6 (scalable storage).
+- **Released:** v1.0.5, https://github.com/duppinstech/landing-page-manager-pro/releases/tag/v1.0.5 (tag on `main` at 194de24, PR #6). Analytics in atomic tables (F6, fixes B11); opt-in uninstall drops them (P6). 1.0.4 → 1.0.5 auto-update verified with live data.
+- **Open:** the plugin header `Author:` line was changed in the working copy to "Duppins Technology" by an unknown session; not committed (conflicts with L5). Owner to decide.
 
