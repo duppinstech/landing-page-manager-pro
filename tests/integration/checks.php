@@ -69,10 +69,6 @@ ob_start();
 lpm_check( 'Pro Analytics hidden from editors', trim( ob_get_clean() ) === '' );
 wp_set_current_user( 1 );
 lpm_check( 'tracking toggles stored in the shared rows', get_option( '_lpmanager_track_heatmap' ) === 'yes' && lpmanager_pro_tracking_options()['track_heatmap'] === true );
-ob_start();
-\LPManagerPro\Tracking_Manager::render_conversions_page();
-$html = ob_get_clean();
-lpm_check( 'Conversions page renders', strpos( $html, 'Conversion Rate' ) !== false && strpos( $html, 'Interactions' ) !== false );
 
 // Pro Analytics screen (F15): overview and page detail.
 ob_start();

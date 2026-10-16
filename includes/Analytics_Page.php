@@ -47,6 +47,7 @@ class Analytics_Page {
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__( 'Pro Analytics', 'landing-page-manager-pro' ) . '</h1>';
+        echo '<p>' . esc_html__( 'A conversion is a click on a phone link or call button. CTA views count page views in which a call-to-action became visible; form starts count the first field focused in each form per page view. Only published landing pages and enabled tracking features are shown.', 'landing-page-manager-pro' ) . '</p>';
         self::render_filters( $data, $client_id, $template );
         self::render_summary( $data['summary'], $enabled );
 
@@ -225,6 +226,10 @@ class Analytics_Page {
         $back = remove_query_arg( 'page_id' );
         echo '<p><a href="' . esc_url( $back ) . '">' . esc_html__( '← All landing pages', 'landing-page-manager-pro' ) . '</a></p>';
         echo '<h2>' . esc_html( $row['title'] !== '' ? $row['title'] : __( '(no title)', 'landing-page-manager-pro' ) ) . '</h2>';
+        $edit = get_edit_post_link( (int) $row['id'] );
+        if ( $edit ) {
+            echo '<p><a href="' . esc_url( $edit ) . '">' . esc_html__( 'Edit page', 'landing-page-manager-pro' ) . '</a></p>';
+        }
 
         $columns = self::columns( $enabled );
         echo '<table class="widefat striped" style="max-width:40em"><tbody>';

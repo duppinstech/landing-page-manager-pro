@@ -21,7 +21,6 @@
 - **Outbound clicks & CTA visibility** — Count clicks to other domains, and page views in which a call-to-action became visible
 - **Form interactions** — Count form starts (first field focused) and submissions
 - **Pro Analytics screen** (administrators) — Views, conversions, link clicks, average time on page, scroll depth, rage clicks, outbound clicks, CTA views, and form starts and submissions for each landing page, filterable by client and template; each page shows its top links and heatmap grid
-- **Conversions submenu** — Visits, conversions, and conversion rate per page, plus an interactions table (outbound clicks, CTA views, form starts/submits)
 - **REST API** — `GET /wp-json/lpmanager/v1/analytics-data` for dashboard and filtering by client/template
 - **Dashboard integration** — Pro data (visits, conversions, summary) merged into the main LP Manager dashboard. Heatmap, rage-click, engagement, and interaction data are shown under **Landing Pages → Pro Analytics** and available through the REST API.
 - **Tracking exclusions** — Editors and administrators, bots, and visitors who send privacy signals are not tracked (configurable)

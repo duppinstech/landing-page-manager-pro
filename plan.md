@@ -6,7 +6,7 @@ This is the living list of repository and release action items. Check items off 
 
 - Published: **v1.0.3** (GitHub Release, 2026-10-16, https://github.com/duppinstech/landing-page-manager-pro/releases/tag/v1.0.3). Previous: v1.0.2 (2026-03-09).
 - Released: 1.0.3 — a bug-fix and hardening release (B1–B10, B12–B19, B21–B28, F1–F4, F12, F13, R1, R2, R4–R9, R12, R13, P4, S1, L2, L3, B29, B30, B31, R14, L4, L5, P3/F10, R3, R11, U2, U3, PHPCS, integration harness) plus the GitHub updater standard port (U1).
-- In progress: **1.0.4** (F14, F15, R16) on `feature/1.0.4-tracking-toggles`; ships with or after the free plugin's `fix/owner-decisions-p0` release.
+- In progress: **1.0.4** (F14, F15, B33, R15, R16) on `feature/1.0.4-tracking-toggles`. *Owner 2026-10-16:* release after the free plugin's `fix/owner-decisions-p0` release (that session messages when published). At release: bump to 1.0.4, date the changelog, and add a readme.txt 1.0.4 Upgrade Notice (toggles moved to Pro Settings; Conversions is now under Pro Analytics).
 - **Release delivery unblocked (2026-10-16):** the repository is public; the anonymous GitHub API returns the latest release, and the old `oduppinsjr` URL used by 1.0.2 redirects.
 - First department review held 2026-10-14 ([meeting-notes/2026-10-14-1536-department-review.md](meeting-notes/2026-10-14-1536-department-review.md)). Approved items are B21–B25 and R1–R10; owner questions are under [Owner Decisions](#owner-decisions).
 - Second department review (re-review) held 2026-10-14 ([meeting-notes/2026-10-14-2040-department-review.md](meeting-notes/2026-10-14-2040-department-review.md)): all departments pass with follow-ups; approved items B26, B27, R12, R13 implemented the same day; new owner question P4. A targeted round 3 (Legal, Privacy, Product, QA) followed ([meeting-notes/2026-10-14-2250-department-review.md](meeting-notes/2026-10-14-2250-department-review.md)).
@@ -124,7 +124,7 @@ Ordered by suggested priority. Each needs scope confirmation before it starts.
 - [x] **F15. Pro analytics screen.** Landing Pages → Pro Analytics (`Analytics_Page`): summary, client and template filters, a per-page table showing only enabled features, and a page view with scroll depth, top links, and the 10x10 heatmap as an accessible table (numbers in every cell). Uses `Pro_Analytics::build_analytics_data()`, shared with the REST endpoint. Replaces R10. Unit, integration, and browser-checked. _2026-10-16_
 - [x] **B33. Missing toggle rows read as off.** The free plugin's settings defaulted every toggle to on, so a row that was never saved meant on; 1.0.4 read it as off and would have stopped tracking on upgrade for sites where nobody saved those settings. A missing row now reads as on. Toggle rows are written autoloaded. Found by the Release and QA reviews. _2026-10-16_
 - [x] **R16. Heatmap accessibility.** Dark text on a tint capped at 60% (at least 4.5:1 contrast) and row/column headers for screen readers. _2026-10-16_
-- [ ] **R15. One analytics menu.** Fold Pro's Conversions screen into Pro Analytics (keep the `lp_conversions` slug as a redirect); the free plugin's own Analytics entry when Pro is active is that repository's decision. Owner decision pending.
+- [x] **R15. One analytics menu.** *Owner 2026-10-16: fold Conversions into Pro Analytics.* The Conversions menu item and screen are removed; `admin.php?page=lp_conversions` redirects to Pro Analytics (hooked on `admin_menu`, because WordPress denies unknown pages before `admin_init`). Integration-tested. _2026-10-16_
 
 ## Owner Decisions
 

@@ -64,6 +64,13 @@ check "Global Privacy Control honored" '"track":false' "$(post -H 'Sec-GPC: 1' -
 check "Cubot phone tracked" '"track":true' "$(curl -s -A 'Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36' -d "action=lpmanager_pro_session&post_id=$PID&count_view=0" "$AJAX")"
 check "unpublished page rejected" "Invalid post" "$(post -d "action=lpmanager_pro_session&post_id=999999&count_view=1")"
 
+# Old Conversions screen links redirect to Pro Analytics (R15).
+JAR=$(mktemp)
+curl -s -c "$JAR" -b "$JAR" -o /dev/null "$SITE/wp-login.php"
+curl -s -c "$JAR" -b "$JAR" -o /dev/null -d "log=admin&pwd=integration-admin&wp-submit=Log+In&testcookie=1" "$SITE/wp-login.php"
+check "Conversions screen redirects to Pro Analytics" "page=lp_pro_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_conversions")"
+rm -f "$JAR"
+
 docker compose run --rm -T cli eval-file /opt/lpm-integration/checks.php "$PID" 2>/dev/null | tr -d '\r' | tee /tmp/lpm-checks.$$
 grep -q '^FAIL' /tmp/lpm-checks.$$ && FAILED=$((FAILED + 1))
 # A crash before the summary line would otherwise hide every server-side check.

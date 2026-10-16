@@ -73,7 +73,8 @@ class Tracking_Manager {
         add_action( 'wp_ajax_nopriv_lpmanager_record_interaction', [ __CLASS__, 'record_interaction' ] );
         add_action( 'wp_ajax_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         add_action( 'wp_ajax_nopriv_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
-        add_action( 'admin_menu', [ __CLASS__, 'maybe_add_conversions_submenu' ] );
+        // admin_menu, not admin_init: WordPress denies unknown admin pages while building the menu, before admin_init.
+        add_action( 'admin_menu', [ __CLASS__, 'redirect_legacy_conversions_page' ], 1 );
         add_action( 'admin_init', [ __CLASS__, 'maybe_clean_stored_link_clicks' ] );
     }
 
@@ -579,98 +580,17 @@ class Tracking_Manager {
         return md5( $norm . '|' . $label );
     }
 
-    public static function render_conversions_page() {
-        $opts = Settings::tracking_options();
-        if ( empty( $opts['enable_conversion_tracking'] ) ) {
-            echo '<div class="wrap"><h1>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</h1><p>' . esc_html__( 'Conversion tracking is currently disabled. Enable it in settings to view analytics.', 'landing-page-manager-pro' ) . '</p></div>';
+    /**
+     * The Conversions screen was folded into Pro Analytics in 1.0.4; old links and bookmarks to
+     * admin.php?page=lp_conversions land there instead of on an "access denied" page.
+     */
+    public static function redirect_legacy_conversions_page() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation; only redirects.
+        if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'lp_conversions' || ! current_user_can( 'manage_options' ) ) {
             return;
         }
-        echo '<div class="wrap">';
-        echo '<h1>' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</h1>';
-        echo '<p>' . esc_html__( 'This table shows phone link click conversions for each landing page.', 'landing-page-manager-pro' ) . '</p>';
-        echo '<table class="widefat fixed striped">';
-        echo '<thead><tr>';
-        echo '<th scope="col">' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
-        echo '<th scope="col">' . esc_html__( 'Visits', 'landing-page-manager-pro' ) . '</th>';
-        echo '<th scope="col">' . esc_html__( 'Conversions', 'landing-page-manager-pro' ) . '</th>';
-        echo '<th scope="col">' . esc_html__( 'Conversion Rate', 'landing-page-manager-pro' ) . '</th>';
-        echo '</tr></thead><tbody>';
-        $pages = get_posts( [ 'post_type' => 'landing_page', 'posts_per_page' => -1 ] );
-        if ( ! $pages ) {
-            self::render_empty_row( 4 );
-        }
-        foreach ( $pages as $page ) {
-            $visits = (int) get_post_meta( $page->ID, '_lpmanager_page_views', true );
-            $conversions = (int) get_post_meta( $page->ID, '_lpmanager_conversions', true );
-            $rate = $visits > 0 ? round( ( $conversions / $visits ) * 100, 1 ) . '%' : '0%';
-            $edit_link = get_edit_post_link( $page->ID );
-            echo '<tr>';
-            echo '<td><a href="' . esc_url( $edit_link ) . '">' . esc_html( get_the_title( $page ) ) . '</a></td>';
-            echo '<td>' . esc_html( $visits ) . '</td>';
-            echo '<td>' . esc_html( $conversions ) . '</td>';
-            echo '<td>' . esc_html( $rate ) . '</td>';
-            echo '</tr>';
-        }
-        echo '</tbody></table>';
-        self::render_interactions_table( $pages, $opts );
-        echo '</div>';
-    }
-
-    /** Outbound clicks, CTA views, and form starts/submits; only enabled types get columns. */
-    private static function render_interactions_table( array $pages, array $opts ) {
-        $columns = [];
-        if ( ! empty( $opts['track_outbound_clicks'] ) ) {
-            $columns['outbound_click'] = __( 'Outbound Clicks', 'landing-page-manager-pro' );
-        }
-        if ( ! empty( $opts['track_cta_visibility'] ) ) {
-            $columns['cta_view'] = __( 'CTA Views', 'landing-page-manager-pro' );
-        }
-        if ( ! empty( $opts['track_form_interactions'] ) ) {
-            $columns['form_start']  = __( 'Form Starts', 'landing-page-manager-pro' );
-            $columns['form_submit'] = __( 'Form Submits', 'landing-page-manager-pro' );
-        }
-        if ( ! $columns ) {
-            return;
-        }
-        echo '<h2>' . esc_html__( 'Interactions', 'landing-page-manager-pro' ) . '</h2>';
-        echo '<p>' . esc_html__( 'CTA views count page views in which a call-to-action became visible. Form starts count the first field focused in each form per page view.', 'landing-page-manager-pro' ) . '</p>';
-        echo '<table class="widefat fixed striped"><thead><tr>';
-        echo '<th scope="col">' . esc_html__( 'Landing Page', 'landing-page-manager-pro' ) . '</th>';
-        foreach ( $columns as $label ) {
-            echo '<th scope="col">' . esc_html( $label ) . '</th>';
-        }
-        echo '</tr></thead><tbody>';
-        if ( ! $pages ) {
-            self::render_empty_row( count( $columns ) + 1 );
-        }
-        foreach ( $pages as $page ) {
-            $counts = self::get_interaction_counts( $page->ID );
-            echo '<tr><td><a href="' . esc_url( get_edit_post_link( $page->ID ) ) . '">' . esc_html( get_the_title( $page ) ) . '</a></td>';
-            foreach ( array_keys( $columns ) as $type ) {
-                echo '<td>' . esc_html( $counts[ $type ] ) . '</td>';
-            }
-            echo '</tr>';
-        }
-        echo '</tbody></table>';
-    }
-
-    private static function render_empty_row( $colspan ) {
-        echo '<tr><td colspan="' . esc_attr( $colspan ) . '">' . esc_html__( 'No landing pages yet.', 'landing-page-manager-pro' ) . '</td></tr>';
-    }
-
-    public static function maybe_add_conversions_submenu() {
-        $opts = Settings::tracking_options();
-        if ( empty( $opts['enable_conversion_tracking'] ) ) {
-            return;
-        }
-        add_submenu_page(
-            'lp_dashboard',
-            __( 'Conversions', 'landing-page-manager-pro' ),
-            __( 'Conversions', 'landing-page-manager-pro' ),
-            'manage_options',
-            'lp_conversions',
-            [ __CLASS__, 'render_conversions_page' ]
-        );
+        wp_safe_redirect( admin_url( 'admin.php?page=' . Analytics_Page::PAGE_SLUG ) );
+        exit;
     }
 }
 
