@@ -77,6 +77,14 @@ grep -q '^FAIL' /tmp/lpm-checks.$$ && FAILED=$((FAILED + 1))
 grep -q '^All server-side checks passed' /tmp/lpm-checks.$$ || { grep -q '^FAILED' /tmp/lpm-checks.$$ || { echo "FAIL server-side checks did not complete"; FAILED=$((FAILED + 1)); }; }
 rm -f /tmp/lpm-checks.$$
 
+# B11: simultaneous requests must not lose increments (atomic counters, F6).
+BEFORE=$(wp post meta get "$PID" _lpmanager_conversions)
+S2=$(post -d "action=lpmanager_pro_session&post_id=$PID&count_view=0")
+AUTH2="post_id=$PID&nonce=$(echo "$S2" | field nonce)&session=$(echo "$S2" | field session)"
+for _ in $(seq 1 40); do post -d "action=lpmanager_record_conversion&$AUTH2" >/dev/null & done
+wait
+check "40 simultaneous conversions all counted" "$((BEFORE + 40))" "$(wp post meta get "$PID" _lpmanager_conversions)"
+
 # Real uninstall through WP-CLI (plugin files are mounted read-only, so they are not deleted).
 wp plugin activate landing-page-manager-pro >/dev/null
 wp option update lpmanager_pro_settings '{"delete_data_on_uninstall":true}' --format=json >/dev/null

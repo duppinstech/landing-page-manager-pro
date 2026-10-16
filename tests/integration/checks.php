@@ -23,15 +23,20 @@ global $wpdb;
 foreach ( [ '_lpmanager_page_views', '_lpmanager_conversions', '_lpmanager_total_clicks', '_lpmanager_rage_clicks', '_lpmanager_cta_views' ] as $key ) {
 	lpm_check( "$key recorded", (int) get_post_meta( $lpm_pid, $key, true ) === 1, (string) get_post_meta( $lpm_pid, $key, true ) );
 }
-$links = get_option( 'lpmanager_link_clicks' )[ $lpm_pid ] ?? [];
+// F6 storage: tables exist and hold this run's events; the old options are no longer written.
+lpm_check( 'storage tables installed', (int) get_option( \LPManagerPro\Stats::DB_VERSION_OPTION ) === \LPManagerPro\Stats::DB_VERSION && $wpdb->get_var( 'SHOW TABLES LIKE \'' . \LPManagerPro\Stats::stats_table() . '\'' ) );
+$links = \LPManagerPro\Stats::links_for_post( $lpm_pid );
 $row   = current( $links );
 lpm_check( 'link href stored without query or fragment', $row && $row['href'] === 'https://example.org/out', $row ? $row['href'] : 'none' );
-$engagement = get_option( 'lpmanager_engagement' )[ $lpm_pid ] ?? [];
-lpm_check( 'time over one hour dropped', (int) ( $engagement['time_count'] ?? 0 ) === 1 && (int) $engagement['time_sum'] === 30 );
-lpm_check( 'heatmap cells recorded', array_sum( get_option( 'lpmanager_heatmap' )[ $lpm_pid ] ?? [] ) === 5 );
-$autoloaded = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->options} WHERE option_name IN ('lpmanager_link_clicks','lpmanager_engagement','lpmanager_heatmap','lpmanager_daily_visits','lpmanager_daily_conversions') AND autoload IN ('yes','on','auto-on')" );
-lpm_check( 'tracking options not autoloaded', $autoloaded === 0, (string) $autoloaded );
-lpm_check( 'P4 cleanup skipped on AJAX', get_option( 'lpmanager_pro_link_clicks_cleaned' ) === false );
+$stats = \LPManagerPro\Stats::totals( [ $lpm_pid ] )[ $lpm_pid ] ?? [];
+lpm_check( 'time over one hour dropped', (int) ( $stats['time_count'] ?? 0 ) === 1 && (int) ( $stats['time_sum'] ?? 0 ) === 30 );
+$heat = 0;
+for ( $cell = 0; $cell < 100; $cell++ ) {
+	$heat += (int) ( $stats[ \LPManagerPro\Stats::heat_metric( $cell ) ] ?? 0 );
+}
+lpm_check( 'heatmap cells recorded', $heat === 5, (string) $heat );
+lpm_check( 'daily series from the stats table', ( \LPManagerPro\Stats::daily_series( 'views' )[ gmdate( 'Y-m-d' ) ] ?? 0 ) >= 1 && ( \LPManagerPro\Stats::daily_series( 'conversions' )[ gmdate( 'Y-m-d' ) ] ?? 0 ) === 1 );
+lpm_check( 'old tracking options not written', get_option( 'lpmanager_link_clicks' ) === false && get_option( 'lpmanager_engagement' ) === false && get_option( 'lpmanager_heatmap' ) === false );
 
 // REST permissions and toggle filtering.
 wp_set_current_user( 0 );
@@ -45,13 +50,22 @@ $data = rest_do_request( new WP_REST_Request( 'GET', '/lpmanager/v1/analytics-da
 $page_row = current( array_filter( $data['interactions'], function ( $r ) use ( $lpm_pid ) { return (int) $r['post_id'] === $lpm_pid; } ) );
 lpm_check( 'REST omits disabled interaction types', $page_row && ! array_key_exists( 'form_start', $page_row ) && array_key_exists( 'cta_view', $page_row ) );
 
-// P4 cleanup on an admin request.
-$stored                         = get_option( 'lpmanager_link_clicks', [] );
-$stored[ $lpm_pid ]['legacy']   = [ 'count' => 4, 'href' => 'https://example.org/out?utm_source=old', 'label' => $row['label'] ];
-update_option( 'lpmanager_link_clicks', $stored, false );
-\LPManagerPro\Tracking_Manager::maybe_clean_stored_link_clicks();
-$after = get_option( 'lpmanager_link_clicks' )[ $lpm_pid ];
-lpm_check( 'P4 cleanup merges legacy rows', count( $after ) === 1 && (int) current( $after )['count'] === 5 && get_option( 'lpmanager_pro_link_clicks_cleaned' ) );
+// Migration of pre-1.0.5 options: copied once, merged with live data, safe to repeat.
+update_option( 'lpmanager_link_clicks', [ $lpm_pid => [ 'a' => [ 'count' => 4, 'href' => 'https://example.org/out?utm_source=old', 'label' => $row['label'] ] ] ], false );
+update_option( 'lpmanager_engagement', [ $lpm_pid => [ 'time_sum' => 100, 'time_count' => 2, 'scroll_25' => 3, 'scroll_50' => 0, 'scroll_75' => 0, 'scroll_100' => 1 ] ], false );
+update_option( 'lpmanager_heatmap', [ $lpm_pid => array_fill( 0, 100, 1 ) ], false );
+update_option( 'lpmanager_daily_visits', [ '2026-01-02' => 7 ], false );
+delete_option( \LPManagerPro\Stats::MIGRATED_OPTION );
+\LPManagerPro\Stats::migrate();
+\LPManagerPro\Stats::migrate();
+$migrated = \LPManagerPro\Stats::totals( [ $lpm_pid ] )[ $lpm_pid ];
+$merged   = \LPManagerPro\Stats::links_for_post( $lpm_pid );
+lpm_check( 'migration merges legacy link clicks with live ones', count( $merged ) === 1 && $merged[0]['count'] === 5, json_encode( $merged ) );
+lpm_check( 'migration copies engagement once', $migrated['time_sum'] === 130 && $migrated['time_count'] === 3 && $migrated['scroll_25'] === 3 && $migrated['scroll_100'] === 1 );
+// Cells 0 and 99 also had one live sample each; cell 2 is legacy only.
+lpm_check( 'migration copies the heatmap once', $migrated['heat_00'] === 2 && $migrated['heat_99'] === 2 && $migrated['heat_02'] === 1 );
+lpm_check( 'migration keeps the old daily series', ( \LPManagerPro\Stats::daily_series( 'views' )['2026-01-02'] ?? 0 ) === 7 );
+lpm_check( 'migration marked done', (bool) get_option( \LPManagerPro\Stats::MIGRATED_OPTION ) && get_option( 'lpmanager_pro_migration_lock' ) === false );
 
 // Admin screens.
 ob_start();

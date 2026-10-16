@@ -17,9 +17,6 @@ class Tracking_Manager {
     /** Stored link labels are capped; the click key uses the same capped label so rows can be re-keyed. */
     const MAX_LABEL_LENGTH = 100;
 
-    /** Set once link rows stored before 1.0.3 have been cleaned (P4). */
-    const LINK_CLICKS_CLEANED_OPTION = 'lpmanager_pro_link_clicks_cleaned';
-
     /** Nonce action for the public tracking endpoints; separate from the free plugin's lpmanager_nonce. */
     const NONCE_ACTION = 'lpmanager_pro_tracking';
 
@@ -75,7 +72,6 @@ class Tracking_Manager {
         add_action( 'wp_ajax_nopriv_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         // admin_menu, not admin_init: WordPress denies unknown admin pages while building the menu, before admin_init.
         add_action( 'admin_menu', [ __CLASS__, 'redirect_legacy_conversions_page' ], 1 );
-        add_action( 'admin_init', [ __CLASS__, 'maybe_clean_stored_link_clicks' ] );
     }
 
     /**
@@ -160,16 +156,8 @@ class Tracking_Manager {
     }
 
     private static function record_page_view( $post_id ) {
-        $views = (int) get_post_meta( $post_id, '_lpmanager_page_views', true );
-        update_post_meta( $post_id, '_lpmanager_page_views', $views + 1 );
-
-        $today = gmdate( 'Y-m-d' );
-        $daily = get_option( 'lpmanager_daily_visits', [] );
-        if ( ! is_array( $daily ) ) {
-            $daily = [];
-        }
-        $daily[ $today ] = isset( $daily[ $today ] ) ? (int) $daily[ $today ] + 1 : 1;
-        self::save_tracking_option( 'lpmanager_daily_visits', $daily );
+        Stats::increment_meta( $post_id, '_lpmanager_page_views' );
+        Stats::add( $post_id, [ 'views' => 1 ] );
     }
 
     public static function enqueue_tracking_scripts() {
@@ -242,16 +230,8 @@ class Tracking_Manager {
             wp_send_json_error( 'Invalid post.' );
         }
         self::exit_if_limited( self::require_session( $post_id ), 'conversion', self::MAX_REPEAT_EVENTS_PER_SESSION );
-        $conversions = (int) get_post_meta( $post_id, '_lpmanager_conversions', true );
-        update_post_meta( $post_id, '_lpmanager_conversions', $conversions + 1 );
-
-        $today = gmdate( 'Y-m-d' );
-        $daily = get_option( 'lpmanager_daily_conversions', [] );
-        if ( ! is_array( $daily ) ) {
-            $daily = [];
-        }
-        $daily[ $today ] = isset( $daily[ $today ] ) ? (int) $daily[ $today ] + 1 : 1;
-        self::save_tracking_option( 'lpmanager_daily_conversions', $daily );
+        Stats::increment_meta( $post_id, '_lpmanager_conversions' );
+        Stats::add( $post_id, [ 'conversions' => 1 ] );
 
         wp_send_json_success( 'Conversion recorded.' );
     }
@@ -270,25 +250,10 @@ class Tracking_Manager {
             wp_send_json_error( 'Invalid post.' );
         }
         self::exit_if_limited( self::require_session( $post_id ), 'click', self::MAX_REPEAT_EVENTS_PER_SESSION );
-        $key = self::normalize_click_key( $href, $text );
-        $stored = get_option( 'lpmanager_link_clicks', [] );
-        if ( ! is_array( $stored ) ) {
-            $stored = [];
-        }
-        if ( ! isset( $stored[ $post_id ] ) || ! is_array( $stored[ $post_id ] ) ) {
-            $stored[ $post_id ] = [];
-        }
-        // Past the cap, new links still count toward the page total but get no per-link row.
-        if ( isset( $stored[ $post_id ][ $key ] ) || count( $stored[ $post_id ] ) < self::MAX_LINKS_PER_PAGE ) {
-            if ( ! isset( $stored[ $post_id ][ $key ] ) ) {
-                $stored[ $post_id ][ $key ] = [ 'count' => 0, 'href' => $href, 'label' => $text ];
-            }
-            $stored[ $post_id ][ $key ]['count'] = (int) $stored[ $post_id ][ $key ]['count'] + 1;
-            self::save_tracking_option( 'lpmanager_link_clicks', $stored );
-        }
-
-        $total_clicks = (int) get_post_meta( $post_id, '_lpmanager_total_clicks', true );
-        update_post_meta( $post_id, '_lpmanager_total_clicks', $total_clicks + 1 );
+        // Past the per-page link cap, a click still counts toward the page total but gets no link row.
+        Stats::add_link_click( $post_id, self::normalize_click_key( $href, $text ), $href, $text );
+        Stats::increment_meta( $post_id, '_lpmanager_total_clicks' );
+        Stats::add( $post_id, [ 'clicks' => 1 ] );
 
         wp_send_json_success( 'Click recorded.' );
     }
@@ -305,34 +270,21 @@ class Tracking_Manager {
             wp_send_json_error( 'Invalid post.' );
         }
         $session = self::require_session( $post_id );
-        $stored  = get_option( 'lpmanager_engagement', [] );
-        if ( ! is_array( $stored ) ) {
-            $stored = [];
-        }
-        if ( ! isset( $stored[ $post_id ] ) || ! is_array( $stored[ $post_id ] ) ) {
-            $stored[ $post_id ] = [ 'time_sum' => 0, 'time_count' => 0, 'scroll_25' => 0, 'scroll_50' => 0, 'scroll_75' => 0, 'scroll_100' => 0 ];
-        }
-        $changed = false;
+        $amounts = [];
         if ( ! empty( $opts['track_time_on_page'] ) ) {
             $seconds = isset( $_POST['seconds'] ) ? absint( $_POST['seconds'] ) : 0;
             if ( $seconds > 0 && $seconds <= self::MAX_ENGAGEMENT_SECONDS && self::allow_event( $session, 'time', 1 ) ) {
-                $stored[ $post_id ]['time_sum']   = (int) $stored[ $post_id ]['time_sum'] + $seconds;
-                $stored[ $post_id ]['time_count'] = (int) $stored[ $post_id ]['time_count'] + 1;
-                $changed = true;
+                $amounts['time_sum']   = $seconds;
+                $amounts['time_count'] = 1;
             }
         }
         if ( ! empty( $opts['track_scroll_depth'] ) ) {
             $depth = isset( $_POST['scroll_depth'] ) ? absint( $_POST['scroll_depth'] ) : 0;
             if ( in_array( $depth, [ 25, 50, 75, 100 ], true ) && self::allow_event( $session, 'scroll_' . $depth, 1 ) ) {
-                $key = 'scroll_' . $depth;
-                $stored[ $post_id ][ $key ] = (int) ( $stored[ $post_id ][ $key ] ?? 0 ) + 1;
-                $changed = true;
+                $amounts[ 'scroll_' . $depth ] = 1;
             }
         }
-        // CTA-visibility and form-interaction pings carry no payload; skip the write for them.
-        if ( $changed ) {
-            self::save_tracking_option( 'lpmanager_engagement', $stored );
-        }
+        Stats::add( $post_id, $amounts );
         wp_send_json_success( 'Engagement recorded.' );
     }
 
@@ -356,19 +308,14 @@ class Tracking_Manager {
             wp_send_json_success( 'No data.' );
         }
         self::exit_if_limited( self::require_session( $post_id ), 'heatmap', 1 );
-        $stored = get_option( 'lpmanager_heatmap', [] );
-        if ( ! is_array( $stored ) ) {
-            $stored = [];
-        }
-        if ( ! isset( $stored[ $post_id ] ) || ! is_array( $stored[ $post_id ] ) ) {
-            $stored[ $post_id ] = array_fill( 0, 100, 0 );
-        }
+        $amounts = [];
         foreach ( $cells as $idx ) {
-            if ( $idx >= 0 && $idx < 100 ) {
-                $stored[ $post_id ][ $idx ] = (int) ( $stored[ $post_id ][ $idx ] ?? 0 ) + 1;
+            if ( $idx < 100 ) {
+                $metric             = Stats::heat_metric( $idx );
+                $amounts[ $metric ] = ( $amounts[ $metric ] ?? 0 ) + 1;
             }
         }
-        self::save_tracking_option( 'lpmanager_heatmap', $stored );
+        Stats::add( $post_id, $amounts );
         wp_send_json_success( 'Heatmap recorded.' );
     }
 
@@ -384,8 +331,8 @@ class Tracking_Manager {
             wp_send_json_error( 'Invalid post.' );
         }
         self::exit_if_limited( self::require_session( $post_id ), 'rage_click', self::MAX_REPEAT_EVENTS_PER_SESSION );
-        $count = (int) get_post_meta( $post_id, '_lpmanager_rage_clicks', true );
-        update_post_meta( $post_id, '_lpmanager_rage_clicks', $count + 1 );
+        Stats::increment_meta( $post_id, '_lpmanager_rage_clicks' );
+        Stats::add( $post_id, [ 'rage_clicks' => 1 ] );
         wp_send_json_success( 'Rage click recorded.' );
     }
 
@@ -406,9 +353,8 @@ class Tracking_Manager {
         }
         // A CTA view happens once per page view; the other interactions can repeat.
         self::exit_if_limited( self::require_session( $post_id ), $type, $type === 'cta_view' ? 1 : self::MAX_REPEAT_EVENTS_PER_SESSION );
-        $meta_key = self::INTERACTIONS[ $type ]['meta'];
-        $count    = (int) get_post_meta( $post_id, $meta_key, true );
-        update_post_meta( $post_id, $meta_key, $count + 1 );
+        Stats::increment_meta( $post_id, self::INTERACTIONS[ $type ]['meta'] );
+        Stats::add( $post_id, [ $type => 1 ] );
         wp_send_json_success( 'Interaction recorded.' );
     }
 
@@ -504,11 +450,6 @@ class Tracking_Manager {
             && get_post_status( $post_id ) === 'publish';
     }
 
-    /** Tracking options grow with traffic, so keep them out of the autoloaded options. */
-    private static function save_tracking_option( $name, $value ) {
-        update_option( $name, $value, false );
-    }
-
     /**
      * Drops the query string and fragment, which can carry visitor tokens or email addresses, and
      * caps the length so public callers cannot store large values.
@@ -517,28 +458,6 @@ class Tracking_Manager {
         $href = esc_url_raw( preg_replace( '/[?#].*$/s', '', (string) $href ) );
         // Cut after escaping, which can lengthen the value by percent-encoding characters.
         return substr( $href, 0, self::MAX_HREF_LENGTH );
-    }
-
-    /**
-     * One-time cleanup of link rows recorded before 1.0.3, which kept query strings and fragments.
-     * Runs on the first admin page load after updating. Skipped on admin-ajax, where it would race
-     * record_click's own read-then-write; cleaning is idempotent, so a second pass is safe.
-     */
-    public static function maybe_clean_stored_link_clicks() {
-        if ( wp_doing_ajax() || get_option( self::LINK_CLICKS_CLEANED_OPTION ) ) {
-            return;
-        }
-        $stored = get_option( 'lpmanager_link_clicks', [] );
-        if ( is_array( $stored ) && $stored ) {
-            self::save_tracking_option( 'lpmanager_link_clicks', self::clean_link_rows( $stored ) );
-            // A click saved between the read and the write above restores uncleaned rows; clean again.
-            wp_cache_delete( 'lpmanager_link_clicks', 'options' );
-            $stored = get_option( 'lpmanager_link_clicks', [] );
-            if ( is_array( $stored ) && $stored !== self::clean_link_rows( $stored ) ) {
-                self::save_tracking_option( 'lpmanager_link_clicks', self::clean_link_rows( $stored ) );
-            }
-        }
-        update_option( self::LINK_CLICKS_CLEANED_OPTION, 1 );
     }
 
     /**
