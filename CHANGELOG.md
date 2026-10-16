@@ -8,13 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- **Landing Pages → Pro Analytics**: views, conversions, link clicks, average time on page, scroll depth, rage clicks, outbound clicks, CTA views, and form starts and submissions for each landing page, filterable by client and template. Open a page to see its scroll depth, top links, and heatmap grid. Only enabled tracking features are shown. Analytics are part of Pro only.
+- **Landing Pages → Pro Analytics**: views, conversions, link clicks, average time on page, scroll depth, rage clicks, outbound clicks, CTA views, and form starts and submissions for each landing page, filterable by client and template. Open a page to see its scroll depth, top links, and heatmap grid. Only enabled tracking features are shown. Administrators only. Analytics are part of Pro only.
+- `lpmanager_pro_tracking_options()` returns which tracking features are on. Landing Page Manager uses it, when present, instead of its own settings.
 
 ### Changed
 
-- **Tracking options moved to Landing Pages → Pro Settings** ("What is tracked"). They were under Landing Page Manager's settings; your existing choices carry over, because Pro uses the same stored values. Conversions are always recorded.
-- First-activation tracking defaults no longer depend on Landing Page Manager's settings framework.
-- New `lpmanager_pro_tracking_options()` returns which tracking features are on. Landing Page Manager uses it, when present, instead of its own settings.
+- **Tracking options moved to Landing Pages → Pro Settings** ("What is tracked"). They were under Landing Page Manager's settings; your existing choices carry over, because Pro uses the same stored values (an option that was never saved stays on, as before). Conversion tracking is always on; excluded visits are not counted. With Landing Page Manager versions that predate this change, its Conversion Tracking tab still shows; both screens change the same settings, and the last save wins.
 - When **Delete data on uninstall** is on, the tracking options are removed too.
 
 ## [1.0.3] - 2026-10-16

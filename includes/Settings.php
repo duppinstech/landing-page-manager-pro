@@ -1,7 +1,7 @@
 <?php
 /**
- * Pro-owned settings (tracking exclusions). The tracking toggles themselves live in the free
- * plugin's Carbon Fields settings; these are stored separately so Pro does not modify them.
+ * Pro Settings: what is tracked (the tracking toggles, owned by Pro since 1.0.4), who is tracked
+ * (exclusions, privacy signals, consent), and uninstall behavior.
  *
  * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
@@ -112,7 +112,10 @@ class Settings {
     public static function tracking_options() {
         $options = [ 'enable_conversion_tracking' => true ];
         foreach ( self::TRACKING_TOGGLES as $key ) {
-            $options[ $key ] = get_option( self::tracking_option_name( $key ) ) === 'yes';
+            // A row that was never saved means on, as the free plugin's settings defaulted it (and sites
+            // where nobody saved those settings tracked everything before 1.0.4).
+            $value            = get_option( self::tracking_option_name( $key ), null );
+            $options[ $key ] = $value === null || $value === 'yes';
         }
         return $options;
     }
@@ -123,7 +126,8 @@ class Settings {
     }
 
     public static function set_tracking_option( $key, $enabled ) {
-        update_option( self::tracking_option_name( $key ), $enabled ? 'yes' : '', false );
+        // Autoloaded: the front end reads every toggle on each landing-page request.
+        update_option( self::tracking_option_name( $key ), $enabled ? 'yes' : '', true );
     }
 
     /** Checkbox value for a toggle row: 'yes' when checked, '' otherwise (the Carbon Fields format). */
@@ -266,11 +270,11 @@ class Settings {
         echo '<h1>' . esc_html__( 'Landing Page Manager Pro Settings', 'landing-page-manager-pro' ) . '</h1>';
         settings_errors();
         echo '<p>' . esc_html__( 'Choose what Landing Page Manager Pro records, whose visits are tracked, and what happens to its data when the plugin is deleted.', 'landing-page-manager-pro' ) . '</p>';
-        echo '<p>' . esc_html__( 'Excluded visits are not counted, so turning an option on lowers the counts from that point and turning it off raises them. Since version 1.0.3, previews, logged-in users who can edit content, bots, and visitors who send privacy signals are excluded by default, so counts can be lower than before the update. Earlier data is not changed.', 'landing-page-manager-pro' ) . '</p>';
         echo '<form method="post" action="options.php">';
         settings_fields( self::GROUP );
         self::render_tracking_toggles();
         echo '<h2>' . esc_html__( 'Who is tracked', 'landing-page-manager-pro' ) . '</h2>';
+        echo '<p>' . esc_html__( 'Excluded visits are not counted, so turning an option on lowers the counts from that point and turning it off raises them. Since version 1.0.3, previews, logged-in users who can edit content, bots, and visitors who send privacy signals are excluded by default, so counts can be lower than before the update. Earlier data is not changed.', 'landing-page-manager-pro' ) . '</p>';
         // The filter can require consent even when the box is unchecked, so the notice uses the effective value.
         $require_consent = self::requires_consent();
         $consent_status  = self::get_consent_status( $require_consent );
@@ -315,7 +319,7 @@ class Settings {
         ];
         $options = self::tracking_options();
         echo '<h2>' . esc_html__( 'What is tracked', 'landing-page-manager-pro' ) . '</h2>';
-        echo '<p>' . esc_html__( 'Conversions (phone and call-button clicks) are always recorded. Earlier versions kept these options under Landing Page Manager settings; your choices carried over.', 'landing-page-manager-pro' ) . '</p>';
+        echo '<p>' . esc_html__( 'Conversion tracking (phone and call-button clicks) is always on; the Who is tracked rules below still apply. Earlier versions kept these options under Landing Page Manager settings; your choices carried over.', 'landing-page-manager-pro' ) . '</p>';
         echo '<table class="form-table" role="presentation"><tbody><tr><th scope="row">' . esc_html__( 'Tracking features', 'landing-page-manager-pro' ) . '</th><td><fieldset>';
         echo '<legend class="screen-reader-text">' . esc_html__( 'Tracking features', 'landing-page-manager-pro' ) . '</legend>';
         foreach ( self::TRACKING_TOGGLES as $key ) {

@@ -212,7 +212,8 @@ class SettingsTest extends TestCase {
 		$this->assertTrue( $options['enable_conversion_tracking'] );
 		$this->assertTrue( $options['track_page_views'] );
 		$this->assertFalse( $options['track_heatmap'] );
-		$this->assertFalse( $options['track_rage_clicks'] );
+		// Never saved: on, as the free plugin's settings defaulted it.
+		$this->assertTrue( $options['track_rage_clicks'] );
 		$this->assertCount( count( Settings::TRACKING_TOGGLES ) + 1, $options );
 	}
 

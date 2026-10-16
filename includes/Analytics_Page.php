@@ -38,7 +38,8 @@ class Analytics_Page {
         }
         // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only filters; nothing is changed.
         $client_id = isset( $_GET['client_id'] ) ? absint( $_GET['client_id'] ) : 0;
-        $template  = isset( $_GET['template'] ) ? sanitize_key( wp_unslash( $_GET['template'] ) ) : '';
+        // Same handling as the REST endpoint's template filter (a trimmed slug string).
+        $template  = isset( $_GET['template'] ) ? sanitize_text_field( wp_unslash( $_GET['template'] ) ) : '';
         $page_id   = isset( $_GET['page_id'] ) ? absint( $_GET['page_id'] ) : 0;
         // phpcs:enable WordPress.Security.NonceVerification.Recommended
         $data    = Pro_Analytics::build_analytics_data( $client_id, $template );
@@ -47,7 +48,7 @@ class Analytics_Page {
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__( 'Pro Analytics', 'landing-page-manager-pro' ) . '</h1>';
         self::render_filters( $data, $client_id, $template );
-        self::render_summary( $data['summary'] );
+        self::render_summary( $data['summary'], $enabled );
 
         $rows = self::page_rows( $data );
         if ( $page_id && isset( $rows[ $page_id ] ) ) {
@@ -122,15 +123,19 @@ class Analytics_Page {
         echo '</form>';
     }
 
-    private static function render_summary( array $summary ) {
-        $items = [
-            [ __( 'Landing pages', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_pages'] ) ],
-            [ __( 'Views', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_views'] ) ],
+    private static function render_summary( array $summary, array $enabled ) {
+        $items = [ [ __( 'Landing pages', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_pages'] ) ] ];
+        if ( $enabled['page_views'] ) {
+            $items[] = [ __( 'Views', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_views'] ) ];
+        }
+        if ( $enabled['conversions'] ) {
             /* translators: 1: number of conversions, 2: conversion rate in percent. */
-            [ __( 'Conversions', 'landing-page-manager-pro' ), sprintf( __( '%1$s (%2$s%%)', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_conversions'] ), number_format_i18n( $summary['ctr_conversion'], 1 ) ) ],
+            $items[] = [ __( 'Conversions', 'landing-page-manager-pro' ), sprintf( __( '%1$s (%2$s%%)', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_conversions'] ), number_format_i18n( $summary['ctr_conversion'], 1 ) ) ];
+        }
+        if ( $enabled['link_clicks'] ) {
             /* translators: 1: number of link clicks, 2: click-through rate in percent. */
-            [ __( 'Link clicks', 'landing-page-manager-pro' ), sprintf( __( '%1$s (%2$s%%)', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_clicks'] ), number_format_i18n( $summary['ctr_clicks'], 1 ) ) ],
-        ];
+            $items[] = [ __( 'Link clicks', 'landing-page-manager-pro' ), sprintf( __( '%1$s (%2$s%%)', 'landing-page-manager-pro' ), number_format_i18n( $summary['total_clicks'] ), number_format_i18n( $summary['ctr_clicks'], 1 ) ) ];
+        }
         echo '<dl class="lpmanager-pro-summary" style="display:flex;flex-wrap:wrap;gap:1.5em;margin:1em 0">';
         foreach ( $items as $item ) {
             echo '<div><dt style="color:#50575e">' . esc_html( $item[0] ) . '</dt><dd style="margin:0;font-size:1.6em;font-weight:600">' . esc_html( $item[1] ) . '</dd></div>';
@@ -219,7 +224,7 @@ class Analytics_Page {
     private static function render_page_detail( array $row, array $data, array $enabled ) {
         $back = remove_query_arg( 'page_id' );
         echo '<p><a href="' . esc_url( $back ) . '">' . esc_html__( '← All landing pages', 'landing-page-manager-pro' ) . '</a></p>';
-        echo '<h2>' . esc_html( $row['title'] ) . '</h2>';
+        echo '<h2>' . esc_html( $row['title'] !== '' ? $row['title'] : __( '(no title)', 'landing-page-manager-pro' ) ) . '</h2>';
 
         $columns = self::columns( $enabled );
         echo '<table class="widefat striped" style="max-width:40em"><tbody>';
@@ -271,14 +276,21 @@ class Analytics_Page {
             echo '<p>' . esc_html__( 'No heatmap data yet.', 'landing-page-manager-pro' ) . '</p>';
             return;
         }
-        echo '<table class="lpmanager-pro-heatmap" style="border-collapse:collapse;table-layout:fixed;width:min(100%,32em)"><caption class="screen-reader-text">' . esc_html__( 'Mouse-position counts by grid cell', 'landing-page-manager-pro' ) . '</caption><tbody>';
+        echo '<table class="lpmanager-pro-heatmap" style="border-collapse:collapse;table-layout:fixed;width:min(100%,34em)"><caption class="screen-reader-text">' . esc_html__( 'Mouse-position counts by grid cell, rows top to bottom and columns left to right', 'landing-page-manager-pro' ) . '</caption>';
+        echo '<thead><tr><td></td>';
+        for ( $c = 1; $c <= 10; $c++ ) {
+            /* translators: %d: column number, 1 to 10 from left to right. */
+            echo '<th scope="col" style="font-size:11px;font-weight:400;color:#50575e" aria-label="' . esc_attr( sprintf( __( 'Column %d', 'landing-page-manager-pro' ), $c ) ) . '">' . esc_html( number_format_i18n( $c ) ) . '</th>';
+        }
+        echo '</tr></thead><tbody>';
         for ( $r = 0; $r < 10; $r++ ) {
-            echo '<tr>';
+            /* translators: %d: row number, 1 to 10 from top to bottom. */
+            echo '<tr><th scope="row" style="font-size:11px;font-weight:400;color:#50575e;padding-right:.4em" aria-label="' . esc_attr( sprintf( __( 'Row %d', 'landing-page-manager-pro' ), $r + 1 ) ) . '">' . esc_html( number_format_i18n( $r + 1 ) ) . '</th>';
             for ( $c = 0; $c < 10; $c++ ) {
                 $count = (int) $grid[ $r * 10 + $c ];
-                $alpha = round( $count / $max, 2 );
-                $color = $alpha > 0.55 ? '#fff' : '#1d2327';
-                echo '<td style="border:1px solid #dcdcde;padding:.35em 0;text-align:center;font-size:12px;color:' . esc_attr( $color ) . ';background:rgba(214,54,56,' . esc_attr( $alpha ) . ')">' . esc_html( number_format_i18n( $count ) ) . '</td>';
+                // Capped tint with dark text keeps every cell at or above 4.5:1 contrast.
+                $alpha = round( 0.6 * $count / $max, 2 );
+                echo '<td style="border:1px solid #dcdcde;padding:.35em 0;text-align:center;font-size:12px;color:#1d2327;background:rgba(214,54,56,' . esc_attr( $alpha ) . ')">' . esc_html( number_format_i18n( $count ) ) . '</td>';
             }
             echo '</tr>';
         }
