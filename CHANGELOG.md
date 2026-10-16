@@ -4,7 +4,7 @@ All notable changes to Landing Page Manager Pro are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.0.4] - 2026-10-16
 
 ### Added
 
@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- **Tracking options moved to Landing Pages → Pro Settings** ("What is tracked"). They were under Landing Page Manager's settings; your existing choices carry over, because Pro uses the same stored values (an option that was never saved stays on, as before). Conversion tracking is always on; excluded visits are not counted. With Landing Page Manager versions that predate this change, its Conversion Tracking tab still shows; both screens change the same settings, and the last save wins.
+- **Tracking options moved to Landing Pages → Pro Settings** ("What is tracked"). They were under Landing Page Manager's settings; your existing choices carry over, because Pro uses the same stored values (an option that was never saved stays on, as before). Conversion tracking is always on; excluded visits are not counted. With Landing Page Manager before 1.0.7, its Conversion Tracking tab still shows; both screens change the same settings, and the last save wins.
 - When **Delete data on uninstall** is on, the tracking options are removed too.
 - The **Conversions** screen is folded into **Pro Analytics**, which shows the same numbers (views, conversions and conversion rate, outbound clicks, CTA views, form starts and submissions) and more. Old links and bookmarks to it open Pro Analytics.
 
