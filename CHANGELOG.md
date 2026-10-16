@@ -80,6 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Licensed under GPL-2.0-or-later** from this version (earlier versions were proprietary). The full text ships as `license.txt`. The product names are not licensed under the GPL, and license keys, updates, and support are provided under a separate agreement with Duppins Technology. LICENSE.md keeps a warranty disclaimer and limitation of liability.
 - The plugin description now lists all tracking features.
 - Copyright notices name Odell Duppins (d/b/a Duppins Technology), the copyright holder.
+- Release notes under "View details" now include this version's changelog section after the requirements. Releases are built with read-only permissions, published from `main` only, and carry signed build provenance (updater standard v1.1.0).
 - `Tracking_Manager` moved to the `LPManagerPro` namespace. `LPManager\admin\Tracking_Manager` remains as an alias.
 
 ## [1.0.2] - 2026-03-09

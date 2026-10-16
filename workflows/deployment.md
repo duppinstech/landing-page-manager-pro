@@ -5,7 +5,7 @@ This repository distributes the plugin through GitHub Releases. Deployment means
 ## Prepare
 
 - [ ] Confirm the release scope and version.
-- [ ] Update `CHANGELOG.md` and keep the plugin header `Version`, `LP_MANAGER_PRO_VERSION`, and the `readme.txt` `Stable tag` identical. The release workflow fails on a tag that does not match all three.
+- [ ] Update `CHANGELOG.md` and keep the plugin header `Version`, `LP_MANAGER_PRO_VERSION`, and the `readme.txt` `Stable tag` identical. The release workflow fails on a tag that does not match all three, on a tag that is not on `main`, and when `CHANGELOG.md` has no dated `## [x.y.z]` section for the version (`bash bin/release-notes.sh <version> landing-page-manager-pro.php` checks this locally).
 - [ ] Run `composer lint` and `composer test`, plus available behavior checks; document unavailable automation.
 - [ ] Commit the release changes, then run `bash bin/build-zip.sh`. Inspect the listed archive contents: a single `landing-page-manager-pro/` folder with the entry point, `includes/`, `assets/`, `uninstall.php`, and `readme.txt`, and no development files.
 - [ ] Install the ZIP on a clean supported WordPress site with the free dependency active; verify activation and the changed behavior.
