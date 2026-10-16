@@ -65,6 +65,18 @@ ob_start();
 $html = ob_get_clean();
 lpm_check( 'Conversions page renders', strpos( $html, 'Conversion Rate' ) !== false && strpos( $html, 'Interactions' ) !== false );
 
+// Pro Analytics screen (F15): overview and page detail.
+ob_start();
+\LPManagerPro\Analytics_Page::render_page();
+$html = ob_get_clean();
+lpm_check( 'Pro Analytics overview renders', strpos( $html, 'Pro Analytics' ) !== false && strpos( $html, 'Analytics by landing page' ) !== false && strpos( $html, 'page_id=' . $lpm_pid ) !== false );
+$_GET['page_id'] = $lpm_pid;
+ob_start();
+\LPManagerPro\Analytics_Page::render_page();
+$html = ob_get_clean();
+unset( $_GET['page_id'] );
+lpm_check( 'Pro Analytics detail shows heatmap and top links', strpos( $html, 'lpmanager-pro-heatmap' ) !== false && strpos( $html, 'https://example.org/out' ) !== false && strpos( $html, 'Scroll depth' ) !== false );
+
 // Uninstall: kept by default, removed when opted in. Shared analytics always kept.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	define( 'WP_UNINSTALL_PLUGIN', 'landing-page-manager-pro/landing-page-manager-pro.php' );

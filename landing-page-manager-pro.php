@@ -95,10 +95,12 @@ add_action( 'plugins_loaded', function () {
     require_once $pro_path . 'includes/Settings.php';
     require_once $pro_path . 'includes/Tracking_Manager.php';
     require_once $pro_path . 'includes/Pro_Analytics.php';
+    require_once $pro_path . 'includes/Analytics_Page.php';
 
     LPManagerPro\Settings::init();
     LPManagerPro\Tracking_Manager::init();
     LPManagerPro\Pro_Analytics::init();
+    LPManagerPro\Analytics_Page::init();
 
     lpmanager_pro_apply_activation_defaults();
 }, 20 );

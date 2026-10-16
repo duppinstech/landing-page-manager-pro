@@ -20,6 +20,7 @@
 - **Rage clicks** — Count repeated clicks in the same area
 - **Outbound clicks & CTA visibility** — Count clicks to other domains, and page views in which a call-to-action became visible
 - **Form interactions** — Count form starts (first field focused) and submissions
+- **Pro Analytics screen** — Per-page engagement, interactions, rage clicks, top links, and the heatmap grid, filterable by client and template
 - **Conversions submenu** — Visits, conversions, and conversion rate per page, plus an interactions table (outbound clicks, CTA views, form starts/submits)
 - **REST API** — `GET /wp-json/lpmanager/v1/analytics-data` for dashboard and filtering by client/template
 - **Dashboard integration** — Pro data (visits, conversions, summary) merged into the main LP Manager dashboard. Heatmap, rage-click, engagement, and interaction data are available through the REST API.

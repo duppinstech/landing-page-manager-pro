@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Landing Pages → Pro Analytics**: views, conversions, link clicks, average time on page, scroll depth, rage clicks, outbound clicks, CTA views, and form starts and submissions for each landing page, filterable by client and template. Open a page to see its scroll depth, top links, and heatmap grid. Only enabled tracking features are shown. Analytics are part of Pro only.
+
 ### Changed
 
 - **Tracking options moved to Landing Pages → Pro Settings** ("What is tracked"). They were under Landing Page Manager's settings; your existing choices carry over, because Pro uses the same stored values. Conversions are always recorded.
