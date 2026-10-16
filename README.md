@@ -44,7 +44,7 @@ Run `bash bin/build-zip.sh` from a clean checkout. It writes `landing-page-manag
 
 Pro updates itself from the GitHub Releases of `duppinstech/landing-page-manager-pro` (the Duppins Technology GitHub updater standard). **Dashboard → Updates → Check again** forces a check. To turn updates off, add `define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true );` to `wp-config.php`. Sites can only download releases while the repository is public. Update checks contact `api.github.com`, which sees the site's IP address; GitHub's terms and privacy statement apply.
 
-Deleting the plugin removes only its update cache. Tracking data and Pro Settings are kept, so a reinstall keeps your history.
+Deleting the plugin removes its update cache. Turn on **Delete data on uninstall** in Pro Settings to also remove Pro's own settings and options. Analytics counts are always kept, because Landing Page Manager uses them too, so a reinstall keeps your history.
 
 ## Configuration
 

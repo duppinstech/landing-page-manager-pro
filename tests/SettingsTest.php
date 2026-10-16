@@ -24,6 +24,13 @@ if ( ! function_exists( 'is_multisite' ) ) {
 	}
 }
 
+if ( ! function_exists( 'delete_option' ) ) {
+	function delete_option( $name ) {
+		unset( $GLOBALS['lpmanager_pro_test_options'][ $name ] );
+		return true;
+	}
+}
+
 if ( ! function_exists( '__' ) ) {
 	function __( $text, $domain = 'default' ) {
 		return $text;
@@ -159,5 +166,33 @@ class SettingsTest extends TestCase {
 
 		$this->assertSame( 'notice-warning', $status['class'] );
 		$this->assertStringContainsString( 'Nothing is tracked', $status['message'] );
+	}
+
+	public function test_uninstall_keeps_data_unless_the_site_opted_in() {
+		$GLOBALS['lpmanager_pro_test_options'] = array(
+			Settings::OPTION                     => array( 'delete_data_on_uninstall' => false ),
+			'lpmanager_pro_defaults_applied'     => 1,
+			'lpmanager_link_clicks'              => array( 1 => array() ),
+		);
+
+		$this->assertFalse( Settings::delete_site_data_if_opted_in() );
+		$this->assertArrayHasKey( 'lpmanager_pro_defaults_applied', $GLOBALS['lpmanager_pro_test_options'] );
+	}
+
+	public function test_uninstall_deletes_only_pro_options_when_opted_in() {
+		$GLOBALS['lpmanager_pro_test_options'] = array(
+			Settings::OPTION                     => array( 'delete_data_on_uninstall' => true ),
+			'lpmanager_pro_defaults_applied'     => 1,
+			'lpmanager_pro_link_clicks_cleaned'  => 1,
+			'lpmanager_link_clicks'              => array( 1 => array() ),
+			'lpmanager_daily_visits'             => array( '2026-10-16' => 3 ),
+		);
+
+		$this->assertTrue( Settings::delete_site_data_if_opted_in() );
+		$this->assertSame( array( 'lpmanager_link_clicks', 'lpmanager_daily_visits' ), array_keys( $GLOBALS['lpmanager_pro_test_options'] ) );
+	}
+
+	public function test_delete_data_on_uninstall_is_off_by_default() {
+		$this->assertFalse( Settings::get()['delete_data_on_uninstall'] );
 	}
 }

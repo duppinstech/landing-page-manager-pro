@@ -23,6 +23,19 @@ class Settings {
         'exclude_bots'          => true,
         'honor_privacy_signals' => true,
         'require_consent'       => false,
+        // Off by default so deleting the plugin never removes data the admin did not ask to remove.
+        'delete_data_on_uninstall' => false,
+    ];
+
+    /**
+     * Options that belong only to Pro, removed on uninstall when delete_data_on_uninstall is on.
+     * The lpmanager_* analytics options and _lpmanager_* post meta are shared with the free plugin
+     * and always kept.
+     */
+    const UNINSTALL_OPTIONS = [
+        self::OPTION,
+        'lpmanager_pro_defaults_applied',
+        'lpmanager_pro_link_clicks_cleaned',
     ];
 
     /**
@@ -190,6 +203,10 @@ class Settings {
                 __( 'Require consent', 'landing-page-manager-pro' ),
                 __( 'Do not track until the visitor consents to statistics, through a consent plugin that supports the WP Consent API or a banner that calls window.lpmanagerPro.grantConsent(). Pro sets no cookies and is designed to store only aggregate counts. Whether consent is required depends on the laws that apply to your site.', 'landing-page-manager-pro' ),
             ],
+            'delete_data_on_uninstall' => [
+                __( 'Delete data on uninstall', 'landing-page-manager-pro' ),
+                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Analytics counts are kept, because Landing Page Manager uses them too.', 'landing-page-manager-pro' ),
+            ],
         ];
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__( 'Landing Page Manager Pro Settings', 'landing-page-manager-pro' ) . '</h1>';
@@ -222,6 +239,22 @@ class Settings {
         echo '</tbody></table>';
         submit_button();
         echo '</form></div>';
+    }
+
+    /**
+     * Uninstall cleanup for the current site. Deletes Pro's own options only when the site opted in.
+     *
+     * @return bool Whether data was deleted.
+     */
+    public static function delete_site_data_if_opted_in() {
+        $saved = get_option( self::OPTION, [] );
+        if ( ! is_array( $saved ) || empty( $saved['delete_data_on_uninstall'] ) ) {
+            return false;
+        }
+        foreach ( self::UNINSTALL_OPTIONS as $option ) {
+            delete_option( $option );
+        }
+        return true;
     }
 
     /** Names of active consent or cookie-banner plugins. */
