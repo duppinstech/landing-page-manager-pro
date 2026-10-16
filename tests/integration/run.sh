@@ -31,8 +31,11 @@ wp plugin activate landing-page-manager landing-page-manager-pro >/dev/null
 wp config set WP_DEBUG_LOG true --raw >/dev/null
 wp config set WP_DEBUG_DISPLAY false --raw >/dev/null
 curl -s -o /dev/null "$SITE/"   # applies first-activation defaults
-PID=$(wp post create --post_type=landing_page --post_status=publish --post_title="Integration Page" --porcelain)
-OTHER=$(wp post create --post_type=landing_page --post_status=publish --post_title="Other Page" --porcelain)
+PID=$(wp post create --post_type=landing_page --post_status=draft --post_title="Integration Page" --porcelain)
+OTHER=$(wp post create --post_type=landing_page --post_status=draft --post_title="Other Page" --porcelain)
+# Landing Page Manager keeps incomplete pages as drafts on publish; these bare fixtures are published directly.
+wp eval "global \$wpdb; foreach ( [ $PID, $OTHER ] as \$id ) { \$wpdb->update( \$wpdb->posts, [ 'post_status' => 'publish', 'post_name' => 'lpm-fixture-' . \$id ], [ 'ID' => \$id ] ); clean_post_cache( \$id ); }" >/dev/null
+check "fixture pages published" "publish" "$(wp post get "$PID" --field=post_status)"
 URL=$(wp post url "$PID")
 check "activation defaults applied" "1" "$(wp option get lpmanager_pro_defaults_applied)"
 
@@ -60,6 +63,13 @@ check "bots excluded" '"track":false' "$(curl -s -A 'Mozilla/5.0 (compatible; Go
 check "Global Privacy Control honored" '"track":false' "$(post -H 'Sec-GPC: 1' -d "action=lpmanager_pro_session&post_id=$PID&count_view=1")"
 check "Cubot phone tracked" '"track":true' "$(curl -s -A 'Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36' -d "action=lpmanager_pro_session&post_id=$PID&count_view=0" "$AJAX")"
 check "unpublished page rejected" "Invalid post" "$(post -d "action=lpmanager_pro_session&post_id=999999&count_view=1")"
+
+# Old Conversions screen links redirect to Pro Analytics (R15).
+JAR=$(mktemp)
+curl -s -c "$JAR" -b "$JAR" -o /dev/null "$SITE/wp-login.php"
+curl -s -c "$JAR" -b "$JAR" -o /dev/null -d "log=admin&pwd=integration-admin&wp-submit=Log+In&testcookie=1" "$SITE/wp-login.php"
+check "Conversions screen redirects to Pro Analytics" "page=lp_pro_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_conversions")"
+rm -f "$JAR"
 
 docker compose run --rm -T cli eval-file /opt/lpm-integration/checks.php "$PID" 2>/dev/null | tr -d '\r' | tee /tmp/lpm-checks.$$
 grep -q '^FAIL' /tmp/lpm-checks.$$ && FAILED=$((FAILED + 1))

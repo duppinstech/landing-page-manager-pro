@@ -39,9 +39,9 @@ lpm_check( 'REST rejects anonymous', rest_do_request( new WP_REST_Request( 'GET'
 wp_set_current_user( 1 );
 $response = rest_do_request( new WP_REST_Request( 'GET', '/lpmanager/v1/analytics-data' ) );
 lpm_check( 'REST allows admin', $response->get_status() === 200 );
-carbon_set_theme_option( 'lpmanager_track_form_interactions', false );
+\LPManagerPro\Settings::set_tracking_option( 'track_form_interactions', false );
 $data = rest_do_request( new WP_REST_Request( 'GET', '/lpmanager/v1/analytics-data' ) )->get_data();
-carbon_set_theme_option( 'lpmanager_track_form_interactions', true );
+\LPManagerPro\Settings::set_tracking_option( 'track_form_interactions', true );
 $page_row = current( array_filter( $data['interactions'], function ( $r ) use ( $lpm_pid ) { return (int) $r['post_id'] === $lpm_pid; } ) );
 lpm_check( 'REST omits disabled interaction types', $page_row && ! array_key_exists( 'form_start', $page_row ) && array_key_exists( 'cta_view', $page_row ) );
 
@@ -58,10 +58,29 @@ ob_start();
 \LPManagerPro\Settings::render_page();
 $html = ob_get_clean();
 lpm_check( 'Pro Settings renders', strpos( $html, 'Landing Page Manager Pro Settings' ) !== false && strpos( $html, 'delete_data_on_uninstall' ) !== false );
+lpm_check( 'Pro Settings shows tracking toggles', substr_count( $html, 'name="_lpmanager_track_' ) === 9 && strpos( $html, 'What is tracked' ) !== false );
+delete_option( '_lpmanager_track_scroll_depth' );
+lpm_check( 'a never-saved toggle reads as on', lpmanager_pro_tracking_options()['track_scroll_depth'] === true );
+\LPManagerPro\Settings::set_tracking_option( 'track_scroll_depth', true );
+$lpm_editor = wp_insert_user( [ 'user_login' => 'lpm-editor', 'user_pass' => wp_generate_password(), 'role' => 'editor' ] );
+wp_set_current_user( $lpm_editor );
 ob_start();
-\LPManagerPro\Tracking_Manager::render_conversions_page();
+\LPManagerPro\Analytics_Page::render_page();
+lpm_check( 'Pro Analytics hidden from editors', trim( ob_get_clean() ) === '' );
+wp_set_current_user( 1 );
+lpm_check( 'tracking toggles stored in the shared rows', get_option( '_lpmanager_track_heatmap' ) === 'yes' && lpmanager_pro_tracking_options()['track_heatmap'] === true );
+
+// Pro Analytics screen (F15): overview and page detail.
+ob_start();
+\LPManagerPro\Analytics_Page::render_page();
 $html = ob_get_clean();
-lpm_check( 'Conversions page renders', strpos( $html, 'Conversion Rate' ) !== false && strpos( $html, 'Interactions' ) !== false );
+lpm_check( 'Pro Analytics overview renders', strpos( $html, 'Pro Analytics' ) !== false && strpos( $html, 'Analytics by landing page' ) !== false && strpos( $html, 'page_id=' . $lpm_pid ) !== false );
+$_GET['page_id'] = $lpm_pid;
+ob_start();
+\LPManagerPro\Analytics_Page::render_page();
+$html = ob_get_clean();
+unset( $_GET['page_id'] );
+lpm_check( 'Pro Analytics detail shows heatmap and top links', strpos( $html, 'lpmanager-pro-heatmap' ) !== false && strpos( $html, 'https://example.org/out' ) !== false && strpos( $html, 'Scroll depth' ) !== false );
 
 // Uninstall: kept by default, removed when opted in. Shared analytics always kept.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
@@ -72,7 +91,7 @@ include WP_PLUGIN_DIR . '/landing-page-manager-pro/uninstall.php';
 lpm_check( 'uninstall keeps Pro settings by default', get_option( 'lpmanager_pro_settings' ) !== false && get_option( 'lpmanager_pro_defaults_applied' ) !== false );
 update_option( 'lpmanager_pro_settings', array_merge( \LPManagerPro\Settings::DEFAULTS, [ 'delete_data_on_uninstall' => true ] ) );
 include WP_PLUGIN_DIR . '/landing-page-manager-pro/uninstall.php';
-lpm_check( 'uninstall removes Pro options when opted in', get_option( 'lpmanager_pro_settings' ) === false && get_option( 'lpmanager_pro_defaults_applied' ) === false && get_option( 'lpmanager_pro_link_clicks_cleaned' ) === false );
+lpm_check( 'uninstall removes Pro options when opted in', get_option( '_lpmanager_track_heatmap' ) === false && get_option( 'lpmanager_pro_settings' ) === false && get_option( 'lpmanager_pro_defaults_applied' ) === false && get_option( 'lpmanager_pro_link_clicks_cleaned' ) === false );
 lpm_check( 'uninstall keeps shared analytics', get_option( 'lpmanager_link_clicks' ) !== false && (int) get_post_meta( $lpm_pid, '_lpmanager_page_views', true ) === 1 );
 
 echo $lpm_failed ? "FAILED: $lpm_failed check(s)\n" : "All server-side checks passed.\n";

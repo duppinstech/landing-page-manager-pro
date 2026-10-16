@@ -1,7 +1,7 @@
 <?php
 /**
- * Pro-owned settings (tracking exclusions). The tracking toggles themselves live in the free
- * plugin's Carbon Fields settings; these are stored separately so Pro does not modify them.
+ * Pro Settings: what is tracked (the tracking toggles, owned by Pro since 1.0.4), who is tracked
+ * (exclusions, privacy signals, consent), and uninstall behavior.
  *
  * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
@@ -25,6 +25,23 @@ class Settings {
         'require_consent'       => false,
         // Off by default so deleting the plugin never removes data the admin did not ask to remove.
         'delete_data_on_uninstall' => false,
+    ];
+
+    /**
+     * Tracking toggles, owned by Pro since 1.0.4. Each is stored in the row the free plugin's Carbon
+     * Fields settings already used (`_lpmanager_<key>`, 'yes' = on, '' = off), so existing choices
+     * carry over and older free-plugin versions keep reading the same values.
+     */
+    const TRACKING_TOGGLES = [
+        'track_page_views',
+        'track_link_clicks',
+        'track_time_on_page',
+        'track_scroll_depth',
+        'track_heatmap',
+        'track_rage_clicks',
+        'track_outbound_clicks',
+        'track_cta_visibility',
+        'track_form_interactions',
     ];
 
     /**
@@ -84,6 +101,38 @@ class Settings {
          * @param bool $require Value of the "Require consent" setting.
          */
         return (bool) apply_filters( 'lpmanager_pro_require_consent', self::get()['require_consent'] );
+    }
+
+    /**
+     * Which tracking features are on, in the shape of the free plugin's lpmanager_tracking_options().
+     * Conversions are always recorded while Pro is active.
+     *
+     * @return array<string, bool>
+     */
+    public static function tracking_options() {
+        $options = [ 'enable_conversion_tracking' => true ];
+        foreach ( self::TRACKING_TOGGLES as $key ) {
+            // A row that was never saved means on, as the free plugin's settings defaulted it (and sites
+            // where nobody saved those settings tracked everything before 1.0.4).
+            $value            = get_option( self::tracking_option_name( $key ), null );
+            $options[ $key ] = $value === null || $value === 'yes';
+        }
+        return $options;
+    }
+
+    /** Storage row for a tracking toggle, shared with the free plugin's former Carbon Fields setting. */
+    public static function tracking_option_name( $key ) {
+        return '_lpmanager_' . $key;
+    }
+
+    public static function set_tracking_option( $key, $enabled ) {
+        // Autoloaded: the front end reads every toggle on each landing-page request.
+        update_option( self::tracking_option_name( $key ), $enabled ? 'yes' : '', true );
+    }
+
+    /** Checkbox value for a toggle row: 'yes' when checked, '' otherwise (the Carbon Fields format). */
+    public static function sanitize_toggle( $value ) {
+        return ( $value === 'yes' || $value === '1' || $value === 1 || $value === true ) ? 'yes' : '';
     }
 
     /** Global Privacy Control (Sec-GPC) or Do Not Track (DNT) header on the current request. */
@@ -149,6 +198,13 @@ class Settings {
             'sanitize_callback' => [ __CLASS__, 'sanitize' ],
             'default'           => self::DEFAULTS,
         ] );
+        foreach ( self::TRACKING_TOGGLES as $key ) {
+            register_setting( self::GROUP, self::tracking_option_name( $key ), [
+                'type'              => 'string',
+                'sanitize_callback' => [ __CLASS__, 'sanitize_toggle' ],
+                'default'           => '',
+            ] );
+        }
     }
 
     /** Unchecked checkboxes are absent from the submission, so every known key is set explicitly. */
@@ -213,10 +269,12 @@ class Settings {
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__( 'Landing Page Manager Pro Settings', 'landing-page-manager-pro' ) . '</h1>';
         settings_errors();
-        echo '<p>' . esc_html__( 'Which tracking features are on is set in the Landing Page Manager settings. These options control whose visits are tracked.', 'landing-page-manager-pro' ) . '</p>';
-        echo '<p>' . esc_html__( 'Excluded visits are not counted, so turning an option on lowers the counts from that point and turning it off raises them. Since version 1.0.3, previews, logged-in users who can edit content, bots, and visitors who send privacy signals are excluded by default, so counts can be lower than before the update. Earlier data is not changed.', 'landing-page-manager-pro' ) . '</p>';
+        echo '<p>' . esc_html__( 'Choose what Landing Page Manager Pro records, whose visits are tracked, and what happens to its data when the plugin is deleted.', 'landing-page-manager-pro' ) . '</p>';
         echo '<form method="post" action="options.php">';
         settings_fields( self::GROUP );
+        self::render_tracking_toggles();
+        echo '<h2>' . esc_html__( 'Who is tracked', 'landing-page-manager-pro' ) . '</h2>';
+        echo '<p>' . esc_html__( 'Excluded visits are not counted, so turning an option on lowers the counts from that point and turning it off raises them. Since version 1.0.3, previews, logged-in users who can edit content, bots, and visitors who send privacy signals are excluded by default, so counts can be lower than before the update. Earlier data is not changed.', 'landing-page-manager-pro' ) . '</p>';
         // The filter can require consent even when the box is unchecked, so the notice uses the effective value.
         $require_consent = self::requires_consent();
         $consent_status  = self::get_consent_status( $require_consent );
@@ -226,6 +284,9 @@ class Settings {
         $status_id      = 'lpmanager-pro-consent-status';
         echo '<table class="form-table" role="presentation"><tbody>';
         foreach ( $fields as $key => $field ) {
+            if ( $key === 'delete_data_on_uninstall' ) {
+                echo '</tbody></table><h2>' . esc_html__( 'Data', 'landing-page-manager-pro' ) . '</h2><table class="form-table" role="presentation"><tbody>';
+            }
             $id        = 'lpmanager-pro-' . str_replace( '_', '-', $key );
             $describes = $key === 'require_consent' && $consent_status;
             echo '<tr><th scope="row">' . esc_html( $field[0] ) . '</th><td>';
@@ -243,6 +304,32 @@ class Settings {
         echo '</form></div>';
     }
 
+    /** "What is tracked" section; before 1.0.4 these were in Landing Page Manager's settings. */
+    private static function render_tracking_toggles() {
+        $labels  = [
+            'track_page_views'        => __( 'Page views', 'landing-page-manager-pro' ),
+            'track_link_clicks'       => __( 'Link clicks', 'landing-page-manager-pro' ),
+            'track_time_on_page'      => __( 'Time on page', 'landing-page-manager-pro' ),
+            'track_scroll_depth'      => __( 'Scroll depth', 'landing-page-manager-pro' ),
+            'track_heatmap'           => __( 'Mouse-position heatmap', 'landing-page-manager-pro' ),
+            'track_rage_clicks'       => __( 'Rage clicks (repeated clicks in one spot)', 'landing-page-manager-pro' ),
+            'track_outbound_clicks'   => __( 'Outbound link clicks', 'landing-page-manager-pro' ),
+            'track_cta_visibility'    => __( 'Call-to-action views', 'landing-page-manager-pro' ),
+            'track_form_interactions' => __( 'Form starts and submissions', 'landing-page-manager-pro' ),
+        ];
+        $options = self::tracking_options();
+        echo '<h2>' . esc_html__( 'What is tracked', 'landing-page-manager-pro' ) . '</h2>';
+        echo '<p>' . esc_html__( 'Conversion tracking (phone and call-button clicks) is always on; the Who is tracked rules below still apply. Earlier versions kept these options under Landing Page Manager settings; your choices carried over.', 'landing-page-manager-pro' ) . '</p>';
+        echo '<table class="form-table" role="presentation"><tbody><tr><th scope="row">' . esc_html__( 'Tracking features', 'landing-page-manager-pro' ) . '</th><td><fieldset>';
+        echo '<legend class="screen-reader-text">' . esc_html__( 'Tracking features', 'landing-page-manager-pro' ) . '</legend>';
+        foreach ( self::TRACKING_TOGGLES as $key ) {
+            $name = self::tracking_option_name( $key );
+            $id   = 'lpmanager-pro-' . str_replace( '_', '-', $key );
+            echo '<label for="' . esc_attr( $id ) . '"><input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="yes"' . checked( $options[ $key ], true, false ) . ' /> ' . esc_html( $labels[ $key ] ) . '</label><br />';
+        }
+        echo '</fieldset></td></tr></tbody></table>';
+    }
+
     /**
      * Uninstall cleanup for the current site. Deletes Pro's own options only when the site opted in.
      *
@@ -255,6 +342,10 @@ class Settings {
         }
         foreach ( self::UNINSTALL_OPTIONS as $option ) {
             delete_option( $option );
+        }
+        // Tracking toggle rows are Pro-owned since 1.0.4, so the opt-in cleanup removes them too.
+        foreach ( self::TRACKING_TOGGLES as $key ) {
+            delete_option( self::tracking_option_name( $key ) );
         }
         return true;
     }

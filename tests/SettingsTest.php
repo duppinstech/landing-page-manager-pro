@@ -31,6 +31,13 @@ if ( ! function_exists( 'delete_option' ) ) {
 	}
 }
 
+if ( ! function_exists( 'update_option' ) ) {
+	function update_option( $name, $value, $autoload = null ) {
+		$GLOBALS['lpmanager_pro_test_options'][ $name ] = $value;
+		return true;
+	}
+}
+
 if ( ! function_exists( '__' ) ) {
 	function __( $text, $domain = 'default' ) {
 		return $text;
@@ -194,5 +201,34 @@ class SettingsTest extends TestCase {
 
 	public function test_delete_data_on_uninstall_is_off_by_default() {
 		$this->assertFalse( Settings::get()['delete_data_on_uninstall'] );
+	}
+
+	public function test_tracking_options_read_the_shared_rows() {
+		$GLOBALS['lpmanager_pro_test_options']['_lpmanager_track_page_views'] = 'yes';
+		$GLOBALS['lpmanager_pro_test_options']['_lpmanager_track_heatmap']    = '';
+
+		$options = Settings::tracking_options();
+
+		$this->assertTrue( $options['enable_conversion_tracking'] );
+		$this->assertTrue( $options['track_page_views'] );
+		$this->assertFalse( $options['track_heatmap'] );
+		// Never saved: on, as the free plugin's settings defaulted it.
+		$this->assertTrue( $options['track_rage_clicks'] );
+		$this->assertCount( count( Settings::TRACKING_TOGGLES ) + 1, $options );
+	}
+
+	public function test_set_tracking_option_uses_the_carbon_fields_format() {
+		Settings::set_tracking_option( 'track_heatmap', true );
+		$this->assertSame( 'yes', $GLOBALS['lpmanager_pro_test_options']['_lpmanager_track_heatmap'] );
+
+		Settings::set_tracking_option( 'track_heatmap', false );
+		$this->assertSame( '', $GLOBALS['lpmanager_pro_test_options']['_lpmanager_track_heatmap'] );
+	}
+
+	public function test_sanitize_toggle() {
+		$this->assertSame( 'yes', Settings::sanitize_toggle( 'yes' ) );
+		$this->assertSame( 'yes', Settings::sanitize_toggle( '1' ) );
+		$this->assertSame( '', Settings::sanitize_toggle( null ) );
+		$this->assertSame( '', Settings::sanitize_toggle( 'on; DROP' ) );
 	}
 }

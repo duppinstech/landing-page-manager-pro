@@ -39,7 +39,7 @@ class Pro_Analytics {
      * Add Pro data to dashboard REST response (visits, conversions, summary).
      */
     public static function add_dashboard_pro_data( $data ) {
-        $tracking = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
+        $tracking = Settings::tracking_options();
         $pages = get_posts( [ 'post_type' => 'landing_page', 'posts_per_page' => -1 ] );
 
         $visits_per_page = [];
@@ -89,14 +89,20 @@ class Pro_Analytics {
     }
 
     public static function get_analytics_data( $request ) {
-        $tracking = function_exists( 'lpmanager_tracking_options' ) ? lpmanager_tracking_options() : [];
-        $client_id = (int) $request->get_param( 'client_id' );
         $template_filter = $request->get_param( 'template' );
-        if ( is_string( $template_filter ) ) {
-            $template_filter = trim( $template_filter );
-        } else {
-            $template_filter = '';
-        }
+        return new \WP_REST_Response( self::build_analytics_data( (int) $request->get_param( 'client_id' ), is_string( $template_filter ) ? $template_filter : '' ), 200 );
+    }
+
+    /**
+     * Analytics for published landing pages, optionally filtered by client and template. Shared by
+     * the REST endpoint and the Pro Analytics screen so both always show the same numbers.
+     *
+     * @return array<string, mixed>
+     */
+    public static function build_analytics_data( $client_id = 0, $template_filter = '' ) {
+        $tracking        = Settings::tracking_options();
+        $client_id       = (int) $client_id;
+        $template_filter = trim( (string) $template_filter );
         $pages = get_posts( [
             'post_type'      => 'landing_page',
             'posts_per_page' => -1,
@@ -313,7 +319,7 @@ class Pro_Analytics {
             }
         }
 
-        return new \WP_REST_Response( [
+        return [
             'tracking_enabled' => [
                 'page_views'     => ! empty( $tracking['track_page_views'] ),
                 'conversions'    => ! empty( $tracking['enable_conversion_tracking'] ),
@@ -348,7 +354,7 @@ class Pro_Analytics {
             'templates'         => $templates_list,
             'client_id_filter'  => $client_id,
             'template_filter'   => $template_filter,
-        ], 200 );
+        ];
     }
 
     /**

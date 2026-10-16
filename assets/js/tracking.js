@@ -1,6 +1,6 @@
 /**
  * Landing Page Manager Pro – front-end tracking.
- * Only runs features enabled via lpmanagerTracking (Settings → Conversion Tracking).
+ * Only runs features enabled via lpmanagerTracking (Landing Pages → Pro Settings → What is tracked).
  * - Session: on load, fetches a fresh nonce and (by default) counts the page view, so
  *   pages served from a full-page cache are counted and never use an expired nonce.
  * - Link clicks and outbound clicks: sent per click.

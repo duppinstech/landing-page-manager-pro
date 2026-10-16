@@ -3,7 +3,7 @@
  * Plugin Name: Landing Page Manager Pro
  * Plugin URI: https://github.com/duppinstech/landing-page-manager-pro
  * Description: Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outbound clicks, CTA views, and form tracking for Landing Page Manager, with bot and internal-traffic exclusion and privacy and consent controls.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: Odell Duppins / Duppins Technology
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'LP_MANAGER_PRO_VERSION', '1.0.3' );
+define( 'LP_MANAGER_PRO_VERSION', '1.0.4' );
 
 if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_PATH' ) ) {
     define( 'LP_MANAGER_PRO_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -52,6 +52,16 @@ LPManager_Pro_GitHub_Updater::boot(
  */
 function lpmanager_pro_loaded() {
     return true;
+}
+
+/**
+ * Tracking toggles owned by Pro (since 1.0.4), in the shape of Landing Page Manager's
+ * lpmanager_tracking_options(), which delegates here when this function exists.
+ *
+ * @return array<string, bool> Empty when Pro is not loaded (the free plugin is missing).
+ */
+function lpmanager_pro_tracking_options() {
+    return class_exists( 'LPManagerPro\Settings' ) ? \LPManagerPro\Settings::tracking_options() : [];
 }
 
 register_activation_hook( __FILE__, function () {
@@ -85,48 +95,28 @@ add_action( 'plugins_loaded', function () {
     require_once $pro_path . 'includes/Settings.php';
     require_once $pro_path . 'includes/Tracking_Manager.php';
     require_once $pro_path . 'includes/Pro_Analytics.php';
+    require_once $pro_path . 'includes/Analytics_Page.php';
 
     LPManagerPro\Settings::init();
     LPManagerPro\Tracking_Manager::init();
     LPManagerPro\Pro_Analytics::init();
+    LPManagerPro\Analytics_Page::init();
 
-    // Carbon Fields can only save values after its fields are registered (during init),
-    // so first-activation defaults must wait for that point rather than run here.
-    if ( get_option( 'lpmanager_pro_activation_pending' ) ) {
-        if ( did_action( 'carbon_fields_fields_registered' ) ) {
-            lpmanager_pro_apply_activation_defaults();
-        } else {
-            add_action( 'carbon_fields_fields_registered', 'lpmanager_pro_apply_activation_defaults', 20 );
-        }
-    }
+    lpmanager_pro_apply_activation_defaults();
 }, 20 );
 
 /**
  * On first activation, enable all tracking options so users get full features immediately.
  */
 function lpmanager_pro_apply_activation_defaults() {
-    if ( ! get_option( 'lpmanager_pro_activation_pending' ) || ! function_exists( 'carbon_set_theme_option' ) ) {
+    if ( ! get_option( 'lpmanager_pro_activation_pending' ) ) {
         return;
     }
-    $tracking_keys = [
-        'lpmanager_track_page_views',
-        'lpmanager_track_link_clicks',
-        'lpmanager_track_time_on_page',
-        'lpmanager_track_scroll_depth',
-        'lpmanager_track_heatmap',
-        'lpmanager_track_rage_clicks',
-        'lpmanager_track_outbound_clicks',
-        'lpmanager_track_cta_visibility',
-        'lpmanager_track_form_interactions',
-    ];
     // Attempt once: a failure that repeated on every request would keep overwriting the admin's choices.
     delete_option( 'lpmanager_pro_activation_pending' );
-    try {
-        foreach ( $tracking_keys as $key ) {
-            carbon_set_theme_option( $key, true );
-        }
-    } catch ( \Throwable $e ) {
-        return;
+    // Pro owns the toggle rows (see Settings::TRACKING_TOGGLES), so this no longer waits for Carbon Fields.
+    foreach ( LPManagerPro\Settings::TRACKING_TOGGLES as $key ) {
+        LPManagerPro\Settings::set_tracking_option( $key, true );
     }
     update_option( 'lpmanager_pro_defaults_applied', true, false );
 }
