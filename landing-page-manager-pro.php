@@ -98,6 +98,7 @@ add_action( 'plugins_loaded', function () {
     require_once $pro_path . 'includes/Pro_Analytics.php';
     require_once $pro_path . 'includes/Analytics_Page.php';
 
+    LPManagerPro\Stats::init();
     LPManagerPro\Stats::maybe_install();
     LPManagerPro\Settings::init();
     LPManagerPro\Tracking_Manager::init();

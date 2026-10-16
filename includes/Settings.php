@@ -54,6 +54,10 @@ class Settings {
         'lpmanager_pro_defaults_applied',
         'lpmanager_pro_activation_pending',
         'lpmanager_pro_link_clicks_cleaned',
+        'lpmanager_pro_db_version',
+        'lpmanager_pro_storage_migrated',
+        'lpmanager_pro_migration_lock',
+        'lpmanager_pro_storage_failed',
     ];
 
     /**
@@ -223,8 +227,8 @@ class Settings {
             return;
         }
         $content = '<p>' . esc_html__( 'Landing pages on this site use Landing Page Manager Pro to measure how pages perform. It records aggregate counts per page: page views, call and link clicks (with the link address and text), outbound link clicks, whether a call-to-action became visible, form starts and submissions (not what was typed), time on page, scroll depth, a coarse grid of mouse positions, and repeated rapid clicks.', 'landing-page-manager-pro' ) . '</p>'
-            . '<p>' . esc_html__( 'It is designed to store only aggregate counts per page. It does not set cookies or store IP addresses or user agents. Link addresses are stored without query strings or fragments. The browser\'s user agent and privacy-signal headers are checked on each request to filter bots and honor opt-outs, and are not stored. Each page view gets a random identifier that stays in the browser\'s memory. It is not stored in cookies or local storage and is not linked to an IP address. If the site uses a persistent object cache, it may be kept there for up to one hour to limit repeat events, and then it expires. Visitors whose browser sends Global Privacy Control or Do Not Track are not tracked when the site honors those signals.', 'landing-page-manager-pro' ) . '</p>'
-            . '<p>' . esc_html__( 'These counts are kept until a site administrator removes them. Deleting Landing Page Manager Pro does not remove them, because Landing Page Manager uses them too.', 'landing-page-manager-pro' ) . '</p>';
+            . '<p>' . esc_html__( 'It is designed to store only aggregate counts per page and per day (UTC). It does not set cookies or store IP addresses or user agents. Link addresses are stored without query strings or fragments. The browser\'s user agent and privacy-signal headers are checked on each request to filter bots and honor opt-outs, and are not stored. Each page view gets a random identifier that stays in the browser\'s memory. It is not stored in cookies or local storage and is not linked to an IP address. If the site uses a persistent object cache, it may be kept there for up to one hour to limit repeat events, and then it expires. Visitors whose browser sends Global Privacy Control or Do Not Track are not tracked when the site honors those signals.', 'landing-page-manager-pro' ) . '</p>'
+            . '<p>' . esc_html__( 'These counts and link addresses are kept in the site\'s database until a site administrator removes them, including after Landing Page Manager Pro is deleted.', 'landing-page-manager-pro' ) . '</p>';
         wp_add_privacy_policy_content( __( 'Landing Page Manager Pro', 'landing-page-manager-pro' ), wp_kses_post( $content ) );
     }
 
@@ -263,7 +267,7 @@ class Settings {
             ],
             'delete_data_on_uninstall' => [
                 __( 'Delete data on uninstall', 'landing-page-manager-pro' ),
-                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Analytics counts are kept, because Landing Page Manager uses them too. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.', 'landing-page-manager-pro' ),
+                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Analytics data (the counts shown in Landing Page Manager and Pro\'s analytics tables) is kept. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.', 'landing-page-manager-pro' ),
             ],
         ];
         echo '<div class="wrap">';

@@ -315,7 +315,8 @@ class Tracking_Manager {
                 $amounts[ $metric ] = ( $amounts[ $metric ] ?? 0 ) + 1;
             }
         }
-        Stats::add( $post_id, $amounts );
+        // All-time bucket: a heatmap per day would add 100 rows per page per day.
+        Stats::add( $post_id, $amounts, Stats::ALL_TIME_DAY );
         wp_send_json_success( 'Heatmap recorded.' );
     }
 

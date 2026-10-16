@@ -53,7 +53,7 @@ lpm_check( 'REST omits disabled interaction types', $page_row && ! array_key_exi
 // Migration of pre-1.0.5 options: copied once, merged with live data, safe to repeat.
 update_option( 'lpmanager_link_clicks', [ $lpm_pid => [ 'a' => [ 'count' => 4, 'href' => 'https://example.org/out?utm_source=old', 'label' => $row['label'] ] ] ], false );
 update_option( 'lpmanager_engagement', [ $lpm_pid => [ 'time_sum' => 100, 'time_count' => 2, 'scroll_25' => 3, 'scroll_50' => 0, 'scroll_75' => 0, 'scroll_100' => 1 ] ], false );
-update_option( 'lpmanager_heatmap', [ $lpm_pid => array_fill( 0, 100, 1 ) ], false );
+update_option( 'lpmanager_heatmap', [ $lpm_pid => array_fill( 0, 100, 1 ), 999 => [ 5 => 3 ] ], false );
 update_option( 'lpmanager_daily_visits', [ '2026-01-02' => 7 ], false );
 delete_option( \LPManagerPro\Stats::MIGRATED_OPTION );
 \LPManagerPro\Stats::migrate();
@@ -64,6 +64,12 @@ lpm_check( 'migration merges legacy link clicks with live ones', count( $merged 
 lpm_check( 'migration copies engagement once', $migrated['time_sum'] === 130 && $migrated['time_count'] === 3 && $migrated['scroll_25'] === 3 && $migrated['scroll_100'] === 1 );
 // Cells 0 and 99 also had one live sample each; cell 2 is legacy only.
 lpm_check( 'migration copies the heatmap once', $migrated['heat_00'] === 2 && $migrated['heat_99'] === 2 && $migrated['heat_02'] === 1 );
+lpm_check( 'migration keeps sparse heatmap cell positions', ( \LPManagerPro\Stats::totals( [ 999 ] )[999]['heat_05'] ?? 0 ) === 3 && ! isset( \LPManagerPro\Stats::totals( [ 999 ] )[999]['heat_00'] ) );
+lpm_check( 'migration cleans the old link option in place', strpos( wp_json_encode( get_option( 'lpmanager_link_clicks' ) ), 'utm_source' ) === false );
+update_option( \LPManagerPro\Stats::MIGRATION_LOCK_OPTION, time(), false );
+lpm_check( 'migration waits for a fresh lock', \LPManagerPro\Stats::migrate() === false );
+update_option( \LPManagerPro\Stats::MIGRATION_LOCK_OPTION, time() - 601, false );
+lpm_check( 'migration takes over a stale lock', \LPManagerPro\Stats::migrate() === true && get_option( \LPManagerPro\Stats::MIGRATION_LOCK_OPTION ) === false );
 lpm_check( 'migration keeps the old daily series', ( \LPManagerPro\Stats::daily_series( 'views' )['2026-01-02'] ?? 0 ) === 7 );
 lpm_check( 'migration marked done', (bool) get_option( \LPManagerPro\Stats::MIGRATED_OPTION ) && get_option( 'lpmanager_pro_migration_lock' ) === false );
 

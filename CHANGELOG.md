@@ -8,12 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- Counts are no longer lost when several visitors are tracked at the same moment. Every counter is updated with a single atomic database statement.
+- Counts are no longer lost when several visitors are tracked at the same moment. Every counter is now updated atomically in the database.
 
 ### Changed
 
-- Analytics are stored in two new database tables (`{prefix}lpmanager_pro_stats`, per landing page, day, and metric; `{prefix}lpmanager_pro_links`, per landing page and link) instead of large settings rows that were rewritten on every event. Existing engagement, heatmap, link-click, and daily data are copied in automatically on the first request after updating. The old settings rows are left in place, so going back to 1.0.4 still shows data up to the update.
-- Per-page totals that Landing Page Manager shows (views, conversions, clicks) stay where they were.
+- Analytics are stored in two new database tables (`{prefix}lpmanager_pro_stats`, per landing page, day, and metric; `{prefix}lpmanager_pro_links`, per landing page and link) instead of large settings rows that were rewritten on every event. Existing engagement, heatmap, link-click, and daily data are copied in automatically on the first request after updating. The heatmap is kept as an all-time total. The old settings rows are left in place, so going back to 1.0.4 still shows data up to the update (data recorded on 1.0.5 is not shown by 1.0.4, apart from per-page totals); if you then update again, data recorded while on 1.0.4 is copied in automatically. If the database user cannot create tables, Pro shows a notice and tries again on the next page load.
+- Numbers shown in Landing Page Manager's dashboard are unchanged.
 - Deleting the plugin keeps the analytics tables, as it keeps other analytics data.
 
 ## [1.0.4] - 2026-10-16
