@@ -1,6 +1,6 @@
 /**
  * Landing Page Manager Pro – front-end tracking.
- * Only runs features enabled via lpmanagerTracking (Landing Pages → Pro Settings → What is tracked).
+ * Only runs features enabled via lpmanagerTracking (Landing Pages → Tracking → What is tracked).
  * - Session: on load, fetches a fresh nonce and (by default) counts the page view, so
  *   pages served from a full-page cache are counted and never use an expired nonce.
  * - Link clicks and outbound clicks: sent per click.
@@ -39,7 +39,7 @@
     var postId = parseInt(cfg.postId, 10) || 0;
     if (!postId) return;
 
-    // Global Privacy Control / Do Not Track (Pro Settings, on by default). The server also checks
+    // Global Privacy Control / Do Not Track (Tracking screen, on by default). The server also checks
     // the request headers, so this only saves the requests.
     if (cfg.honorPrivacySignals && (navigator.globalPrivacyControl === true || navigator.doNotTrack === '1' || window.doNotTrack === '1')) return;
 
@@ -95,7 +95,7 @@
             try {
                 var res = JSON.parse(xhr.responseText);
                 if (res && res.success && res.data && res.data.track === false) {
-                    // Internal traffic or a bot (Pro Settings): drop queued and future events.
+                    // Internal traffic or a bot (Tracking screen): drop queued and future events.
                     disabled = true;
                     queue = [];
                 }

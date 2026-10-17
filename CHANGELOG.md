@@ -4,6 +4,18 @@ All notable changes to Landing Page Manager Pro are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Changed
+
+- **One Analytics screen.** With Landing Page Manager 1.0.13 or later, Pro's analytics appear on **Landing Pages → Analytics**: the dashboard with summary cards, charts and report tabs (By Client, By Page, By Template, Link Performance, Engagement, Heatmap, Rage Clicks). Under By Page, select a page title to open its numbers, scroll depth, top links and heatmap grid; Edit opens it in the editor. The separate Pro Analytics menu item is gone, and old links to it redirect.
+- **Pro Settings is now Tracking** (**Landing Pages → Tracking**). Old links redirect. The settings themselves are unchanged.
+- The dashboard's Chart.js is pinned to version 4.4.1.
+
+### Upgrade notes
+
+- Update Landing Page Manager to 1.0.13 as well. With an older Landing Page Manager, Pro keeps its own **Pro Analytics** screen, and Pro Settings appears in the menu as **Tracking**.
+
 ## [1.0.5] - 2026-10-16
 
 ### Fixed

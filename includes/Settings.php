@@ -1,7 +1,9 @@
 <?php
 /**
- * Pro Settings: what is tracked (the tracking toggles, owned by Pro since 1.0.4), who is tracked
- * (exclusions, privacy signals, consent), and uninstall behavior.
+ * Tracking screen (Landing Pages → Tracking; "Pro Settings" before 1.0.6): what is tracked (the
+ * tracking toggles, owned by Pro since 1.0.4), who is tracked (exclusions, privacy signals, consent),
+ * and uninstall behavior. Landing Page Manager 1.0.13+ provides the menu item and Pro renders it
+ * through the lpmanager_render_tracking_page action; with older versions Pro adds its own item.
  *
  * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
  */
@@ -15,6 +17,7 @@ class Settings {
 
     const OPTION     = 'lpmanager_pro_settings';
     const GROUP      = 'lpmanager_pro_settings_group';
+    /** Pro's own menu item, used only with Landing Page Manager before 1.0.13. */
     const PAGE_SLUG  = 'lp_pro_settings';
     const CAPABILITY = 'manage_options';
 
@@ -88,7 +91,11 @@ class Settings {
 
     public static function init() {
         add_action( 'admin_init', [ __CLASS__, 'register' ] );
-        add_action( 'admin_menu', [ __CLASS__, 'add_page' ], 30 );
+        if ( Analytics_Page::uses_core_screen() ) {
+            add_action( 'lpmanager_render_tracking_page', [ __CLASS__, 'render_page' ] );
+        } else {
+            add_action( 'admin_menu', [ __CLASS__, 'add_page' ], 30 );
+        }
         add_action( 'admin_init', [ __CLASS__, 'add_privacy_policy_content' ] );
         // Declares WP Consent API support so consent plugins know Pro respects the "statistics" category.
         add_filter( 'wp_consent_api_registered_' . plugin_basename( LP_MANAGER_PRO_PLUGIN_PATH . 'landing-page-manager-pro.php' ), '__return_true' );
@@ -232,11 +239,22 @@ class Settings {
         wp_add_privacy_policy_content( __( 'Landing Page Manager Pro', 'landing-page-manager-pro' ), wp_kses_post( $content ) );
     }
 
+    /** The screen's admin page slug: Landing Page Manager's Tracking item, or Pro's own. */
+    public static function slug() {
+        if ( Analytics_Page::uses_core_screen() ) {
+            $slots = lpmanager_pro_screen_slots();
+            if ( ! empty( $slots['tracking'] ) ) {
+                return (string) $slots['tracking'];
+            }
+        }
+        return self::PAGE_SLUG;
+    }
+
     public static function add_page() {
         add_submenu_page(
             'lp_dashboard',
-            __( 'Pro Settings', 'landing-page-manager-pro' ),
-            __( 'Pro Settings', 'landing-page-manager-pro' ),
+            __( 'Tracking', 'landing-page-manager-pro' ),
+            __( 'Tracking', 'landing-page-manager-pro' ),
             self::CAPABILITY,
             self::PAGE_SLUG,
             [ __CLASS__, 'render_page' ]
@@ -267,11 +285,11 @@ class Settings {
             ],
             'delete_data_on_uninstall' => [
                 __( 'Delete data on uninstall', 'landing-page-manager-pro' ),
-                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Pro\'s analytics tables (daily counts, heatmap, link clicks) are deleted too; the per-page totals shown in Landing Page Manager are kept. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.', 'landing-page-manager-pro' ),
+                __( 'When Landing Page Manager Pro is deleted from the Plugins screen, also delete these settings and Pro\'s other options. Pro\'s analytics tables (daily counts, heatmap, link clicks) are deleted too; the per-page totals shown in Landing Page Manager are kept. If you reinstall afterwards, Pro starts fresh: these settings return to their defaults and all tracking options are turned on again.', 'landing-page-manager-pro' ),
             ],
         ];
         echo '<div class="wrap">';
-        echo '<h1>' . esc_html__( 'Landing Page Manager Pro Settings', 'landing-page-manager-pro' ) . '</h1>';
+        echo '<h1>' . esc_html__( 'Tracking', 'landing-page-manager-pro' ) . '</h1>';
         settings_errors();
         echo '<p>' . esc_html__( 'Choose what Landing Page Manager Pro records, whose visits are tracked, and what happens to its data when the plugin is deleted.', 'landing-page-manager-pro' ) . '</p>';
         echo '<form method="post" action="options.php">';

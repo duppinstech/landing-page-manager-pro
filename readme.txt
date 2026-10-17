@@ -23,11 +23,11 @@ Analytics move to two new database tables; existing data is copied automatically
 Tracking options moved to Landing Pages > Pro Settings > What is tracked; your choices carry over. Conversions is now part of Landing Pages > Pro Analytics. Update Landing Page Manager to 1.0.7 or later to hide its old Conversion Tracking tab.
 
 = 1.0.3 =
-Counts may be lower after updating: previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted, while views on cached pages now are. Review Landing Pages > Pro Settings, and purge the page cache after updating. Custom tracking code must now send a session token. Stored link clicks that differ only by query string are merged once.
+Counts may be lower after updating: previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted, while views on cached pages now are. Review Landing Pages > Tracking, and purge the page cache after updating. Custom tracking code must now send a session token. Stored link clicks that differ only by query string are merged once.
 
 == Uninstall ==
 
-Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings, including your tracking choices. That also deletes Pro's analytics tables; the per-page totals shown in Landing Page Manager are always kept.
+Deleting the plugin removes its update cache. Turn on Delete data on uninstall under Landing Pages > Tracking to also remove Pro's own settings, including your tracking choices. That also deletes Pro's analytics tables; the per-page totals shown in Landing Page Manager are always kept.
 
 == Changelog ==
 

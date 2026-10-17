@@ -68,7 +68,25 @@ check "unpublished page rejected" "Invalid post" "$(post -d "action=lpmanager_pr
 JAR=$(mktemp)
 curl -s -c "$JAR" -b "$JAR" -o /dev/null "$SITE/wp-login.php"
 curl -s -c "$JAR" -b "$JAR" -o /dev/null -d "log=admin&pwd=integration-admin&wp-submit=Log+In&testcookie=1" "$SITE/wp-login.php"
-check "Conversions screen redirects to Pro Analytics" "page=lp_pro_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_conversions")"
+MENU=$(curl -s -b "$JAR" "$SITE/wp-admin/admin.php?page=lp_dashboard")
+if [[ "$MENU" == *page=lp_tracking* ]]; then
+    # Landing Page Manager 1.0.13+: Pro fills its Analytics and Tracking items.
+    check "Conversions screen redirects to Analytics" "page=lp_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_conversions")"
+    check "Old Pro Analytics address redirects to Analytics" "page=lp_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_pro_analytics")"
+    check "Old Pro Settings address redirects to Tracking" "page=lp_tracking" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_pro_settings")"
+    ANALYTICS=$(curl -s -b "$JAR" "$SITE/wp-admin/admin.php?page=lp_analytics")
+    check "Analytics screen shows Pro's dashboard and loads its script" "both" "$([[ "$ANALYTICS" == *lp-analytics-root* && "$ANALYTICS" == *landing-page-manager-pro/assets/js/analytics.js* ]] && echo both)"
+    check "Analytics screen loads pinned Chart.js with its integrity hash" "both" "$([[ "$ANALYTICS" == *chart.js@4.4.1/dist/chart.umd.js* && "$ANALYTICS" == *integrity=\"sha384-* ]] && echo both)"
+    check "Tracking screen shows Pro's settings" "lpmanager_pro_settings_group" "$(curl -s -b "$JAR" "$SITE/wp-admin/admin.php?page=lp_tracking")"
+    check "No separate Pro Analytics or Pro Settings menu items" "none" "$([[ "$MENU" == *page=lp_pro_analytics* || "$MENU" == *page=lp_pro_settings* ]] && echo found || echo none)"
+else
+    # Landing Page Manager before 1.0.13: Pro keeps its own items, and Pro Settings is titled Tracking.
+    echo "Landing Page Manager before 1.0.13: checking Pro's own screens"
+    check "Conversions screen redirects to Pro Analytics" "page=lp_pro_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_conversions")"
+    check "Pro Analytics address is not redirected" "200:" "$(curl -s -b "$JAR" -o /dev/null -w '%{http_code}:%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_pro_analytics")"
+    check "Pro's Tracking screen renders at its own address" "<h1>Tracking</h1>" "$(curl -s -b "$JAR" "$SITE/wp-admin/admin.php?page=lp_pro_settings")"
+    check "Menu shows Pro Analytics and Tracking" "both" "$(grep -q 'page=lp_pro_analytics' <<<"$MENU" && grep -Eq "page=lp_pro_settings['\"]>Tracking<" <<<"$MENU" && echo both)"
+fi
 rm -f "$JAR"
 
 docker compose run --rm -T cli eval-file /opt/lpm-integration/checks.php "$PID" 2>/dev/null | tr -d '\r' | tee /tmp/lpm-checks.$$
