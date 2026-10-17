@@ -18,7 +18,7 @@
 
 | # | Department | Recommendation | Decision |
 | --- | --- | --- | --- |
-| 1 | Security | Record the 1.0.12 issue: Security entries in both changelogs, and a Pro upgrade note to update Landing Page Manager to 1.0.13 | Auto-approved, implemented. Whether to release promptly or announce it: owner (U6) |
+| 1 | Security | Record the 1.0.12 issue: Security entries in both changelogs, and a Pro upgrade note to update Landing Page Manager to 1.0.13 | Auto-approved, implemented. Whether to release promptly or announce it: owner (U7) |
 | 2 | Security | Wrap numeric values in `Number()` before HTML | Auto-approved, implemented |
 | 3 | QA | Keep `page_id`, `client_id`, `template` when redirecting old Pro Analytics links | Auto-approved, implemented, integration check added |
 | 4 | QA | Unit test for `chart_js_integrity` (both quote styles, other handles, existing integrity) | Auto-approved, added (70 tests) |

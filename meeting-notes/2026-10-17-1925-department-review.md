@@ -34,8 +34,8 @@
 | 11 | Support | README sentence, `tracking.js` comments | Auto-approved, implemented |
 | 12 | Legal, Privacy | Copyright lines; README note on jsDelivr | Auto-approved, implemented |
 | 13 | Release | Version bump and readme.txt entry | At release (needs authorization) |
-| 14 | Product | The all-pages metrics table is gone with Landing Page Manager 1.0.13 | Owner decision (U5) |
-| 15 | Privacy, Legal | Bundle Chart.js instead of the CDN | Owner decision (U4) |
+| 14 | Product | The all-pages metrics table is gone with Landing Page Manager 1.0.13 | Owner decision (U9) |
+| 15 | Privacy, Legal | Bundle Chart.js instead of the CDN | Owner decision (U8) |
 
 ## Notes
 

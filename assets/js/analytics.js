@@ -412,7 +412,7 @@
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
             modal.setAttribute('aria-labelledby', 'lp-heatmap-modal-title');
-            modal.innerHTML = '<div class="lp-heatmap-modal__backdrop"></div><div class="lp-heatmap-modal__box">' +
+            modal.innerHTML = '<div class="lp-heatmap-modal__backdrop"></div><div class="lp-heatmap-modal__box" tabindex="-1">' +
                 '<div class="lp-heatmap-modal__header"><h3 class="lp-heatmap-modal__title" id="lp-heatmap-modal-title"></h3><a class="lp-heatmap-modal__view-page" href="#" target="_blank" rel="noopener">' + t('viewFullPage') + '</a><button type="button" class="lp-heatmap-modal__close" aria-label="' + t('close') + '">&times;</button></div>' +
                 '<div class="lp-heatmap-modal__preview">' +
                 '<div class="lp-heatmap-modal__scroll"><div class="lp-heatmap-modal__canvas"><iframe class="lp-heatmap-modal__iframe" tabindex="-1" title="' + t('pagePreview') + '"></iframe><div class="lp-heatmap-overlay lp-heatmap-modal__overlay"></div></div></div>' +

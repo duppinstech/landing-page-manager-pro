@@ -525,7 +525,8 @@ class Tracking_Manager {
             $targets[ Analytics_Page::PAGE_SLUG ] = Analytics_Page::url( $args );
             $targets[ Settings::PAGE_SLUG ]       = add_query_arg( 'page', Settings::slug(), admin_url( 'admin.php' ) );
         }
-        if ( ! isset( $targets[ $page ] ) || ! current_user_can( 'manage_options' ) ) {
+        // Never redirect a screen to itself (if Landing Page Manager names no Analytics screen).
+        if ( ! isset( $targets[ $page ] ) || 0 === strpos( $targets[ $page ], add_query_arg( 'page', $page, admin_url( 'admin.php' ) ) ) || ! current_user_can( 'manage_options' ) ) {
             return;
         }
         wp_safe_redirect( $targets[ $page ] );
