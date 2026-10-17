@@ -19,7 +19,7 @@
         linkClicks: 'Link clicks',
         conversionRate: 'Conversion rate (CTR)',
         pageViews: 'Page views',
-        enableOverview: 'Turn on page views, link clicks or conversions under Landing Pages → Tracking to see analytics.',
+        enableOverview: 'Turn on Page views or Link clicks under Landing Pages → Tracking to see analytics.',
         noData: 'No data',
         edit: 'Edit',
         linkLabel: 'Link / label',
@@ -152,7 +152,7 @@
             html += '<div class="lp-stat-card lp-stat-card--clicks"><h3 class="lp-stat-card__label">' + t('linkClicks') + '</h3><p class="lp-stat-card__value">' + (summary.total_clicks != null ? Number(summary.total_clicks).toLocaleString() : '0') + '</p></div>';
         }
         if (te.conversions) {
-            html += '<div class="lp-stat-card lp-stat-card--ctr"><h3 class="lp-stat-card__label">' + t('conversionRate') + '</h3><p class="lp-stat-card__value">' + (summary.ctr_conversion != null ? summary.ctr_conversion + '%' : '0%') + '</p></div>';
+            html += '<div class="lp-stat-card lp-stat-card--ctr"><h3 class="lp-stat-card__label">' + t('conversionRate') + '</h3><p class="lp-stat-card__value">' + (summary.ctr_conversion != null ? Number(summary.ctr_conversion) + '%' : '0%') + '</p></div>';
         }
         if (!html) {
             html = '<p class="lp-empty">' + t('enableOverview') + '</p>';
@@ -224,7 +224,7 @@
         const adminUrl = (config.adminUrl) ? config.adminUrl : (window.location.pathname.replace(/\/[^/]*$/, '') + '/admin.php');
         tbody.innerHTML = rows.map(function (r) {
             const url = adminUrl + '?page=' + encodeURIComponent(config.screenSlug || 'lp_analytics') + '&client_id=' + r.client_id;
-            return '<tr><td><a href="' + escapeHtml(url) + '">' + escapeHtml(r.name) + '</a></td><td>' + r.pages_count + '</td><td>' + Number(r.views).toLocaleString() + '</td><td>' + Number(r.conversions).toLocaleString() + '</td><td>' + Number(r.clicks).toLocaleString() + '</td><td>' + r.ctr_conversion + '%</td></tr>';
+            return '<tr><td><a href="' + escapeHtml(url) + '">' + escapeHtml(r.name) + '</a></td><td>' + Number(r.pages_count) + '</td><td>' + Number(r.views).toLocaleString() + '</td><td>' + Number(r.conversions).toLocaleString() + '</td><td>' + Number(r.clicks).toLocaleString() + '</td><td>' + Number(r.ctr_conversion) + '%</td></tr>';
         }).join('') || '<tr><td colspan="6">' + t('noData') + '</td></tr>';
     }
 
@@ -237,7 +237,7 @@
             const editLink = editBase ? editBase.replace('REPLACE_ID', r.id) : ('post.php?post=' + r.id + '&action=edit');
             const detailLink = detailUrl(r.id);
             const tpl = r.template_slug ? escapeHtml(r.template_slug) : '—';
-            return '<tr><td><a href="' + escapeHtml(detailLink) + '">' + escapeHtml(r.title) + '</a> <span class="lp-row-actions">· <a href="' + escapeHtml(editLink) + '">' + t('edit') + '</a></span></td><td>' + escapeHtml(r.client_name || '') + '</td><td>' + tpl + '</td><td>' + Number(r.views).toLocaleString() + '</td><td>' + Number(r.conversions).toLocaleString() + '</td><td>' + Number(r.clicks).toLocaleString() + '</td><td>' + r.ctr_conversion + '%</td></tr>';
+            return '<tr><td><a href="' + escapeHtml(detailLink) + '">' + escapeHtml(r.title) + '</a> <span class="lp-row-actions">· <a href="' + escapeHtml(editLink) + '">' + t('edit') + '</a></span></td><td>' + escapeHtml(r.client_name || '') + '</td><td>' + tpl + '</td><td>' + Number(r.views).toLocaleString() + '</td><td>' + Number(r.conversions).toLocaleString() + '</td><td>' + Number(r.clicks).toLocaleString() + '</td><td>' + Number(r.ctr_conversion) + '%</td></tr>';
         }).join('') || '<tr><td colspan="7">' + t('noData') + '</td></tr>';
     }
 
@@ -246,7 +246,7 @@
         if (!tbody) return;
         const rows = (analyticsData && analyticsData.by_template) ? analyticsData.by_template : [];
         tbody.innerHTML = rows.map(function (r) {
-            return '<tr><td>' + escapeHtml(r.template_name) + '</td><td>' + r.pages_count + '</td><td>' + Number(r.views).toLocaleString() + '</td><td>' + Number(r.conversions).toLocaleString() + '</td><td>' + Number(r.clicks).toLocaleString() + '</td><td>' + r.ctr_conversion + '%</td></tr>';
+            return '<tr><td>' + escapeHtml(r.template_name) + '</td><td>' + Number(r.pages_count) + '</td><td>' + Number(r.views).toLocaleString() + '</td><td>' + Number(r.conversions).toLocaleString() + '</td><td>' + Number(r.clicks).toLocaleString() + '</td><td>' + Number(r.ctr_conversion) + '%</td></tr>';
         }).join('') || '<tr><td colspan="6">' + t('noData') + '</td></tr>';
     }
 
@@ -284,7 +284,7 @@
         }
         let html = '<div class="lp-table-wrapper"><table class="lp-table"><thead><tr><th>' + t('page') + '</th><th>' + t('avgTime') + '</th><th>' + t('sessions') + '</th><th>25%</th><th>50%</th><th>75%</th><th>100%</th></tr></thead><tbody>';
         withData.forEach(function (e) {
-            html += '<tr><td>' + escapeHtml(e.title) + '</td><td>' + (e.time_avg || 0) + '</td><td>' + (e.time_count || 0) + '</td><td>' + (e.scroll_25 || 0) + '</td><td>' + (e.scroll_50 || 0) + '</td><td>' + (e.scroll_75 || 0) + '</td><td>' + (e.scroll_100 || 0) + '</td></tr>';
+            html += '<tr><td>' + escapeHtml(e.title) + '</td><td>' + Number(e.time_avg || 0) + '</td><td>' + Number(e.time_count || 0) + '</td><td>' + Number(e.scroll_25 || 0) + '</td><td>' + Number(e.scroll_50 || 0) + '</td><td>' + Number(e.scroll_75 || 0) + '</td><td>' + Number(e.scroll_100 || 0) + '</td></tr>';
         });
         html += '</tbody></table></div>';
         container.innerHTML = html;
@@ -354,9 +354,12 @@
         scroll.style.height = Math.max(1, Math.round(baseHeight * scale)) + 'px';
     }
 
-    function openHeatmapModal(item) {
+    var heatmapModalTrigger = null;
+
+    function openHeatmapModal(item, trigger) {
         var modal = document.getElementById('lp-heatmap-modal');
         if (!modal) return;
+        heatmapModalTrigger = trigger || null;
         var titleEl = modal.querySelector('.lp-heatmap-modal__title');
         var viewLink = modal.querySelector('.lp-heatmap-modal__view-page');
         var iframe = modal.querySelector('.lp-heatmap-modal__iframe');
@@ -372,6 +375,8 @@
         applyHeatmapScale(preview, HEATMAP_MODAL_HEIGHT);
         modal.classList.add('lp-heatmap-modal--open');
         document.body.classList.add('lp-modal-open');
+        var closeBtn = modal.querySelector('.lp-heatmap-modal__close');
+        if (closeBtn) closeBtn.focus();
     }
 
     function closeHeatmapModal() {
@@ -382,6 +387,7 @@
             if (iframe) iframe.src = 'about:blank';
         }
         document.body.classList.remove('lp-modal-open');
+        if (heatmapModalTrigger) { heatmapModalTrigger.focus(); heatmapModalTrigger = null; }
     }
 
     function renderHeatmap() {
@@ -405,26 +411,36 @@
             modal.className = 'lp-heatmap-modal';
             modal.setAttribute('role', 'dialog');
             modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('aria-labelledby', 'lp-heatmap-modal-title');
             modal.innerHTML = '<div class="lp-heatmap-modal__backdrop"></div><div class="lp-heatmap-modal__box">' +
-                '<div class="lp-heatmap-modal__header"><h3 class="lp-heatmap-modal__title"></h3><a class="lp-heatmap-modal__view-page" href="#" target="_blank" rel="noopener">' + t('viewFullPage') + '</a><button type="button" class="lp-heatmap-modal__close" aria-label="' + t('close') + '">&times;</button></div>' +
+                '<div class="lp-heatmap-modal__header"><h3 class="lp-heatmap-modal__title" id="lp-heatmap-modal-title"></h3><a class="lp-heatmap-modal__view-page" href="#" target="_blank" rel="noopener">' + t('viewFullPage') + '</a><button type="button" class="lp-heatmap-modal__close" aria-label="' + t('close') + '">&times;</button></div>' +
                 '<div class="lp-heatmap-modal__preview">' +
-                '<div class="lp-heatmap-modal__scroll"><div class="lp-heatmap-modal__canvas"><iframe class="lp-heatmap-modal__iframe" title="' + t('pagePreview') + '"></iframe><div class="lp-heatmap-overlay lp-heatmap-modal__overlay"></div></div></div>' +
+                '<div class="lp-heatmap-modal__scroll"><div class="lp-heatmap-modal__canvas"><iframe class="lp-heatmap-modal__iframe" tabindex="-1" title="' + t('pagePreview') + '"></iframe><div class="lp-heatmap-overlay lp-heatmap-modal__overlay"></div></div></div>' +
                 '</div></div>';
             modal.querySelector('.lp-heatmap-modal__backdrop').addEventListener('click', closeHeatmapModal);
             modal.querySelector('.lp-heatmap-modal__close').addEventListener('click', closeHeatmapModal);
+            modal.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') { e.preventDefault(); closeHeatmapModal(); return; }
+                if (e.key !== 'Tab') return;
+                var focusable = [modal.querySelector('.lp-heatmap-modal__view-page'), modal.querySelector('.lp-heatmap-modal__close')]
+                    .filter(function (el) { return el && el.style.display !== 'none'; });
+                var first = focusable[0], last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            });
             document.body.appendChild(modal);
         }
         var cardsHtml = '<div class="lp-heatmap-cards">';
         withData.forEach(function (h) {
             var url = (h.url || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            cardsHtml += '<div class="lp-heatmap-item"><div class="lp-heatmap-card" role="button" tabindex="0" data-post-id="' + (h.post_id || '') + '">';
+            cardsHtml += '<div class="lp-heatmap-item"><div class="lp-heatmap-card" role="button" tabindex="0" data-post-id="' + (parseInt(h.post_id, 10) || '') + '">';
             cardsHtml += '<h4 class="lp-heatmap-card__title">' + escapeHtml(h.title) + '</h4>';
             cardsHtml += '<div class="lp-heatmap-preview">';
-            cardsHtml += '<div class="lp-heatmap-preview__scroll"><div class="lp-heatmap-preview__canvas"><iframe class="lp-heatmap-preview__iframe" data-src="' + url + '" title="' + escapeHtml(h.title) + '"></iframe><div class="lp-heatmap-overlay">' + buildHeatmapOverlayCells(h.grid || []) + '</div></div></div>';
+            cardsHtml += '<div class="lp-heatmap-preview__scroll" inert><div class="lp-heatmap-preview__canvas"><iframe class="lp-heatmap-preview__iframe" tabindex="-1" data-src="' + url + '" title="' + escapeHtml(h.title) + '"></iframe><div class="lp-heatmap-overlay">' + buildHeatmapOverlayCells(h.grid || []) + '</div></div></div>';
             cardsHtml += '</div>';
             cardsHtml += '<p class="lp-heatmap-card__hint">' + t('clickToEnlarge') + '</p>';
             cardsHtml += '</div>';
-            cardsHtml += '<p class="lp-heatmap-item__grid"><a href="' + escapeHtml(detailUrl(h.post_id)) + '">' + t('heatmapGrid') + '</a></p></div>';
+            cardsHtml += '<p class="lp-heatmap-item__grid"><a href="' + escapeHtml(detailUrl(h.post_id)) + '">' + t('heatmapGrid') + '<span class="screen-reader-text">: ' + escapeHtml(h.title) + '</span></a></p></div>';
         });
         cardsHtml += '</div>';
         container.innerHTML = cardsHtml;
@@ -439,7 +455,7 @@
             var postId = card.getAttribute('data-post-id');
             var item = withData.filter(function (h) { return String(h.post_id) === String(postId); })[0];
             if (!item) return;
-            function open() { openHeatmapModal(item); }
+            function open() { openHeatmapModal(item, card); }
             card.addEventListener('click', open);
             card.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
         });

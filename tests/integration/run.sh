@@ -73,6 +73,7 @@ if [[ "$MENU" == *page=lp_tracking* ]]; then
     # Landing Page Manager 1.0.13+: Pro fills its Analytics and Tracking items.
     check "Conversions screen redirects to Analytics" "page=lp_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_conversions")"
     check "Old Pro Analytics address redirects to Analytics" "page=lp_analytics" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_pro_analytics")"
+    check "Old Pro Analytics bookmark keeps its page and filters" "page=lp_analytics&page_id=$PID&client_id=7&template=starter-one" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_pro_analytics&page_id=$PID&client_id=7&template=starter-one")"
     check "Old Pro Settings address redirects to Tracking" "page=lp_tracking" "$(curl -s -b "$JAR" -o /dev/null -w '%{redirect_url}' "$SITE/wp-admin/admin.php?page=lp_pro_settings")"
     ANALYTICS=$(curl -s -b "$JAR" "$SITE/wp-admin/admin.php?page=lp_analytics")
     check "Analytics screen shows Pro's dashboard and loads its script" "both" "$([[ "$ANALYTICS" == *lp-analytics-root* && "$ANALYTICS" == *landing-page-manager-pro/assets/js/analytics.js* ]] && echo both)"

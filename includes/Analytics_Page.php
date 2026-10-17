@@ -119,7 +119,7 @@ class Analytics_Page {
             'linkClicks'       => __( 'Link clicks', 'landing-page-manager-pro' ),
             'conversionRate'   => __( 'Conversion rate (CTR)', 'landing-page-manager-pro' ),
             'pageViews'        => __( 'Page views', 'landing-page-manager-pro' ),
-            'enableOverview'   => __( 'Turn on page views, link clicks or conversions under Landing Pages → Tracking to see analytics.', 'landing-page-manager-pro' ),
+            'enableOverview'   => __( 'Turn on Page views or Link clicks under Landing Pages → Tracking to see analytics.', 'landing-page-manager-pro' ),
             'noData'           => __( 'No data', 'landing-page-manager-pro' ),
             'edit'             => __( 'Edit', 'landing-page-manager-pro' ),
             'linkLabel'        => __( 'Link / label', 'landing-page-manager-pro' ),

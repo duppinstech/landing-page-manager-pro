@@ -507,11 +507,22 @@ class Tracking_Manager {
      * admin_menu, because WordPress denies unknown pages before admin_init.
      */
     public static function redirect_legacy_screens() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation; only redirects.
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only navigation; only redirects.
         $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        // Keep a bookmarked page detail view and its filters.
+        $args = [];
+        foreach ( [ 'page_id', 'client_id' ] as $key ) {
+            if ( ! empty( $_GET[ $key ] ) ) {
+                $args[ $key ] = absint( $_GET[ $key ] );
+            }
+        }
+        if ( isset( $_GET['template'] ) && '' !== $_GET['template'] ) {
+            $args['template'] = rawurlencode( sanitize_text_field( wp_unslash( $_GET['template'] ) ) );
+        }
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
         $targets = [ 'lp_conversions' => Analytics_Page::url() ];
         if ( Analytics_Page::uses_core_screen() ) {
-            $targets[ Analytics_Page::PAGE_SLUG ] = Analytics_Page::url();
+            $targets[ Analytics_Page::PAGE_SLUG ] = Analytics_Page::url( $args );
             $targets[ Settings::PAGE_SLUG ]       = add_query_arg( 'page', Settings::slug(), admin_url( 'admin.php' ) );
         }
         if ( ! isset( $targets[ $page ] ) || ! current_user_can( 'manage_options' ) ) {

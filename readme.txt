@@ -12,7 +12,7 @@ Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outboun
 
 Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outbound clicks, CTA views, and form tracking for Landing Page Manager, with bot and internal-traffic exclusion and privacy and consent controls. The Landing Page Manager plugin must be installed and active.
 
-Updates are delivered through GitHub Releases of duppinstech/landing-page-manager-pro. To check for updates, the plugin contacts api.github.com, which sees the site's IP address; GitHub's terms and privacy statement apply.
+Updates are delivered through GitHub Releases of duppinstech/landing-page-manager-pro. To check for updates, the plugin contacts api.github.com, which sees the site's IP address; GitHub's terms and privacy statement apply. The Analytics screen loads Chart.js 4.4.1 from cdn.jsdelivr.net (checked against a fixed integrity hash), so jsDelivr sees the administrator's IP address and the site's address.
 
 == Upgrade Notice ==
 
