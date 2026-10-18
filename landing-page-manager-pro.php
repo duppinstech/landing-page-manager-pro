@@ -32,6 +32,7 @@ if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_URL' ) ) {
 }
 
 require_once __DIR__ . '/includes/class-lpmanager-pro-github-updater.php';
+require_once __DIR__ . '/includes/class-landing-page-manager-pro-plugin-info.php';
 
 // Updates from GitHub Releases. Booted at load, before the dependency check, so WP-Cron and background
 // auto-updates see releases. Disable with define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true ).
@@ -44,6 +45,26 @@ LPManager_Pro_GitHub_Updater::boot(
         'prefix'  => 'lpmanager_pro',
     ]
 );
+
+// Plugins screen links and the View details modal. Landing Page Manager 1.0.13+ owns the Tracking
+// screen (lp_tracking); older releases use Pro's own menu item.
+$lpmanager_pro_settings_url = 'lp_pro_settings';
+$lpmanager_pro_slots         = array();
+if ( function_exists( 'lpmanager_pro_screen_slots' ) ) {
+    $lpmanager_pro_slots = (array) lpmanager_pro_screen_slots();
+    if ( ! empty( $lpmanager_pro_slots['tracking'] ) ) {
+        $lpmanager_pro_settings_url = (string) $lpmanager_pro_slots['tracking'];
+    }
+}
+LPManager_Pro_Plugin_Info::boot(
+    [
+        'file'         => __FILE__,
+        'settings_url' => $lpmanager_pro_settings_url,
+        'help_url'     => 'https://duppinstech.com/knowledge-base/landing-page-manager/#install',
+        'support_url'  => 'mailto:support@duppinstech.com',
+    ]
+);
+unset( $lpmanager_pro_settings_url, $lpmanager_pro_slots );
 
 /**
  * Pro loader: only the real Pro plugin defines this. Prevents bypass via snippet.
