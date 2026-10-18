@@ -3,7 +3,7 @@
  * Plugin Name: Landing Page Manager Pro
  * Plugin URI: https://github.com/duppinstech/landing-page-manager-pro
  * Description: Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outbound clicks, CTA views, and form tracking for Landing Page Manager, with bot and internal-traffic exclusion and privacy and consent controls.
- * Version: 1.0.5
+ * Version: 1.0.6
  * Requires at least: 5.9
  * Requires PHP: 7.4
  * Author: Odell Duppins / Duppins Technology
@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'LP_MANAGER_PRO_VERSION', '1.0.5' );
+define( 'LP_MANAGER_PRO_VERSION', '1.0.6' );
 
 if ( ! defined( 'LP_MANAGER_PRO_PLUGIN_PATH' ) ) {
     define( 'LP_MANAGER_PRO_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );

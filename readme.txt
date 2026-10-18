@@ -2,7 +2,7 @@
 Requires at least: 5.9
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,6 +15,9 @@ Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outboun
 Updates are delivered through GitHub Releases of duppinstech/landing-page-manager-pro. To check for updates, the plugin contacts api.github.com, which sees the site's IP address; GitHub's terms and privacy statement apply. The Analytics screen loads Chart.js 4.4.1 from cdn.jsdelivr.net (checked against a fixed integrity hash), so jsDelivr sees the administrator's IP address and the site's address.
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Security fix for the Analytics dashboard. Update Landing Page Manager to 1.0.13 as well: Pro's analytics then appear under Landing Pages > Analytics, and Pro Settings becomes Landing Pages > Tracking (your settings carry over).
 
 = 1.0.5 =
 Analytics move to two new database tables; existing data is copied automatically on the first page load after updating, and your numbers stay the same. Counts are no longer lost on busy pages. Take a database backup before updating.
