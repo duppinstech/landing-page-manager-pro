@@ -6,8 +6,9 @@
 	<file>uninstall.php</file>
 	<file>includes</file>
 
-	<!-- Verbatim copy of the Duppins Technology updater standard; it is checked in its reference repository. -->
+	<!-- Verbatim copies of the Duppins Technology standards; they are checked in their reference repositories. -->
 	<exclude-pattern>includes/class-lpmanager-pro-github-updater.php</exclude-pattern>
+	<exclude-pattern>includes/class-landing-page-manager-pro-plugin-info.php</exclude-pattern>
 
 	<arg name="extensions" value="php"/>
 	<arg value="sp"/>

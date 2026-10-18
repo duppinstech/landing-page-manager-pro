@@ -46,25 +46,29 @@ LPManager_Pro_GitHub_Updater::boot(
     ]
 );
 
-// Plugins screen links and the View details modal. Landing Page Manager 1.0.13+ owns the Tracking
-// screen (lp_tracking); older releases use Pro's own menu item.
-$lpmanager_pro_settings_url = 'lp_pro_settings';
-$lpmanager_pro_slots         = array();
-if ( function_exists( 'lpmanager_pro_screen_slots' ) ) {
-    $lpmanager_pro_slots = (array) lpmanager_pro_screen_slots();
-    if ( ! empty( $lpmanager_pro_slots['tracking'] ) ) {
-        $lpmanager_pro_settings_url = (string) $lpmanager_pro_slots['tracking'];
-    }
-}
-LPManager_Pro_Plugin_Info::boot(
-    [
-        'file'         => __FILE__,
-        'settings_url' => $lpmanager_pro_settings_url,
-        'help_url'     => 'https://duppinstech.com/knowledge-base/landing-page-manager/#install',
-        'support_url'  => 'mailto:support@duppinstech.com',
-    ]
+// Plugins screen links and the View details modal. Booted after every plugin file has loaded so
+// Landing Page Manager 1.0.13+ can own the Tracking screen (lp_tracking). Older releases use Pro's menu item.
+add_action(
+    'plugins_loaded',
+    static function () {
+        $settings_url = 'lp_pro_settings';
+        if ( function_exists( 'lpmanager_pro_screen_slots' ) ) {
+            $slots = (array) lpmanager_pro_screen_slots();
+            if ( ! empty( $slots['tracking'] ) ) {
+                $settings_url = (string) $slots['tracking'];
+            }
+        }
+        LPManager_Pro_Plugin_Info::boot(
+            [
+                'file'         => __FILE__,
+                'settings_url' => $settings_url,
+                'help_url'     => 'https://duppinstech.com/knowledge-base/landing-page-manager/#install',
+                'support_url'  => 'mailto:support@duppinstech.com',
+            ]
+        );
+    },
+    5
 );
-unset( $lpmanager_pro_settings_url, $lpmanager_pro_slots );
 
 /**
  * Pro loader: only the real Pro plugin defines this. Prevents bypass via snippet.
