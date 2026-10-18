@@ -2,7 +2,7 @@
 Requires at least: 5.9
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,9 +12,12 @@ Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outboun
 
 Page views, conversions, link clicks, engagement, heatmaps, rage clicks, outbound clicks, CTA views, and form tracking for Landing Page Manager, with bot and internal-traffic exclusion and privacy and consent controls. The Landing Page Manager plugin must be installed and active.
 
-Updates are delivered through GitHub Releases of duppinstech/landing-page-manager-pro. To check for updates, the plugin contacts api.github.com, which sees the site's IP address; GitHub's terms and privacy statement apply.
+Updates are delivered through GitHub Releases of duppinstech/landing-page-manager-pro. To check for updates, the plugin contacts api.github.com, which sees the site's IP address; GitHub's terms and privacy statement apply. The Analytics screen loads Chart.js 4.4.1 from cdn.jsdelivr.net (checked against a fixed integrity hash), so jsDelivr sees the administrator's IP address and the site's address.
 
 == Upgrade Notice ==
+
+= 1.0.6 =
+Security fix for the Analytics dashboard. Update Landing Page Manager to 1.0.13 as well: Pro's analytics then appear under Landing Pages > Analytics, and Pro Settings becomes Landing Pages > Tracking (your settings carry over).
 
 = 1.0.5 =
 Analytics move to two new database tables; existing data is copied automatically on the first page load after updating, and your numbers stay the same. Counts are no longer lost on busy pages. Take a database backup before updating.
@@ -23,11 +26,11 @@ Analytics move to two new database tables; existing data is copied automatically
 Tracking options moved to Landing Pages > Pro Settings > What is tracked; your choices carry over. Conversions is now part of Landing Pages > Pro Analytics. Update Landing Page Manager to 1.0.7 or later to hide its old Conversion Tracking tab.
 
 = 1.0.3 =
-Counts may be lower after updating: previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted, while views on cached pages now are. Review Landing Pages > Pro Settings, and purge the page cache after updating. Custom tracking code must now send a session token. Stored link clicks that differ only by query string are merged once.
+Counts may be lower after updating: previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted, while views on cached pages now are. Review Landing Pages > Tracking, and purge the page cache after updating. Custom tracking code must now send a session token. Stored link clicks that differ only by query string are merged once.
 
 == Uninstall ==
 
-Deleting the plugin removes its update cache. Turn on Delete data on uninstall in Pro Settings to also remove Pro's own settings, including your tracking choices. That also deletes Pro's analytics tables; the per-page totals shown in Landing Page Manager are always kept.
+Deleting the plugin removes its update cache. Turn on Delete data on uninstall under Landing Pages > Tracking to also remove Pro's own settings, including your tracking choices. That also deletes Pro's analytics tables; the per-page totals shown in Landing Page Manager are always kept.
 
 == Changelog ==
 

@@ -83,30 +83,46 @@ lpm_check( 'migration marked done', (bool) get_option( \LPManagerPro\Stats::MIGR
 ob_start();
 \LPManagerPro\Settings::render_page();
 $html = ob_get_clean();
-lpm_check( 'Pro Settings renders', strpos( $html, 'Landing Page Manager Pro Settings' ) !== false && strpos( $html, 'delete_data_on_uninstall' ) !== false );
-lpm_check( 'Pro Settings shows tracking toggles', substr_count( $html, 'name="_lpmanager_track_' ) === 9 && strpos( $html, 'What is tracked' ) !== false );
+lpm_check( 'Tracking screen renders', strpos( $html, '<h1>Tracking</h1>' ) !== false && strpos( $html, 'delete_data_on_uninstall' ) !== false );
+lpm_check( 'Tracking screen shows tracking toggles', substr_count( $html, 'name="_lpmanager_track_' ) === 9 && strpos( $html, 'What is tracked' ) !== false );
 delete_option( '_lpmanager_track_scroll_depth' );
 lpm_check( 'a never-saved toggle reads as on', lpmanager_pro_tracking_options()['track_scroll_depth'] === true );
 \LPManagerPro\Settings::set_tracking_option( 'track_scroll_depth', true );
 $lpm_editor = wp_insert_user( [ 'user_login' => 'lpm-editor', 'user_pass' => wp_generate_password(), 'role' => 'editor' ] );
 wp_set_current_user( $lpm_editor );
 ob_start();
-\LPManagerPro\Analytics_Page::render_page();
-lpm_check( 'Pro Analytics hidden from editors', trim( ob_get_clean() ) === '' );
+\LPManagerPro\Analytics_Page::render_screen();
+lpm_check( 'Analytics hidden from editors', trim( ob_get_clean() ) === '' );
+$_GET['page_id'] = $lpm_pid;
+ob_start();
+\LPManagerPro\Analytics_Page::render_screen();
+unset( $_GET['page_id'] );
+lpm_check( 'Page detail view hidden from editors', trim( ob_get_clean() ) === '' );
 wp_set_current_user( 1 );
 lpm_check( 'tracking toggles stored in the shared rows', get_option( '_lpmanager_track_heatmap' ) === 'yes' && lpmanager_pro_tracking_options()['track_heatmap'] === true );
 
-// Pro Analytics screen (F15): overview and page detail.
+// Analytics screen: with Landing Page Manager 1.0.13+ Pro fills its Analytics and Tracking items.
+// With Landing Page Manager before 1.0.13 (LPM_FREE_PLUGIN_PATH pointing at an older checkout), Pro keeps its own items.
+if ( function_exists( 'lpmanager_pro_screen_slots' ) ) {
+    lpm_check( 'Pro uses the core Analytics and Tracking screens', \LPManagerPro\Analytics_Page::uses_core_screen() && \LPManagerPro\Analytics_Page::slug() === 'lp_analytics' && \LPManagerPro\Settings::slug() === 'lp_tracking' && has_action( 'lpmanager_render_analytics_page' ) && has_action( 'lpmanager_render_tracking_page' ) );
+} else {
+    lpm_check( 'Pro keeps its own screens with Landing Page Manager before 1.0.13', ! \LPManagerPro\Analytics_Page::uses_core_screen() && \LPManagerPro\Analytics_Page::slug() === 'lp_pro_analytics' && \LPManagerPro\Settings::slug() === 'lp_pro_settings' && ! has_action( 'lpmanager_render_analytics_page' ) && ! has_action( 'lpmanager_render_tracking_page' ) );
+}
 ob_start();
-\LPManagerPro\Analytics_Page::render_page();
+\LPManagerPro\Analytics_Page::render_screen();
 $html = ob_get_clean();
-lpm_check( 'Pro Analytics overview renders', strpos( $html, 'Pro Analytics' ) !== false && strpos( $html, 'Analytics by landing page' ) !== false && strpos( $html, 'page_id=' . $lpm_pid ) !== false );
+lpm_check( 'Analytics dashboard renders', strpos( $html, 'id="lp-analytics-root"' ) !== false && strpos( $html, 'id="lp-tbody-pages"' ) !== false && strpos( $html, 'Rage Clicks' ) !== false );
 $_GET['page_id'] = $lpm_pid;
+ob_start();
+\LPManagerPro\Analytics_Page::render_screen();
+$html = ob_get_clean();
+lpm_check( 'Analytics page detail shows heatmap and top links', strpos( $html, 'lpmanager-pro-heatmap' ) !== false && strpos( $html, 'https://example.org/out' ) !== false && strpos( $html, 'Scroll depth' ) !== false && strpos( $html, '<h1>Analytics</h1>' ) !== false );
+// Pro's own screen, used with Landing Page Manager before 1.0.13, still renders.
 ob_start();
 \LPManagerPro\Analytics_Page::render_page();
 $html = ob_get_clean();
 unset( $_GET['page_id'] );
-lpm_check( 'Pro Analytics detail shows heatmap and top links', strpos( $html, 'lpmanager-pro-heatmap' ) !== false && strpos( $html, 'https://example.org/out' ) !== false && strpos( $html, 'Scroll depth' ) !== false );
+lpm_check( 'Fallback Pro Analytics screen still renders', strpos( $html, 'Pro Analytics' ) !== false && strpos( $html, 'lpmanager-pro-heatmap' ) !== false );
 
 // Uninstall: kept by default, removed when opted in. Shared analytics always kept.
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {

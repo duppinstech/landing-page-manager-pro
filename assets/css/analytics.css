@@ -1,0 +1,507 @@
+/*
+ * Landing Page Manager Pro – Analytics screen styles (moved from Landing Page Manager in Pro 1.0.6).
+ *
+ * Copyright (c) 2026 Odell Duppins (d/b/a Duppins Technology). Licensed under GPL-2.0-or-later; see LICENSE.md.
+ */
+/* ============================================
+   Analytics page – tabs, tables, charts
+   ============================================ */
+.lp-analytics {
+    max-width: 1400px;
+    margin: 0;
+    --lp-tab-bg: #f0f0f1;
+    --lp-tab-active: #fff;
+    --lp-border: #c3c4c7;
+    --lp-accent: #2271b1;
+    --lp-accent-hover: #135e96;
+}
+
+.lp-analytics__header {
+    margin-bottom: 1.5rem;
+}
+
+.lp-analytics__title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 0 0 0.25rem 0;
+}
+
+.lp-analytics__subtitle {
+    color: #646970;
+    margin: 0 0 1rem 0;
+    font-size: 0.9375rem;
+}
+
+.lp-analytics__filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+.lp-analytics__filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lp-analytics__filter label {
+    font-weight: 500;
+    color: #1d2327;
+}
+
+.lp-select {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--lp-border);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    min-width: 200px;
+}
+
+/* Tabs */
+.lp-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border-bottom: 1px solid var(--lp-border);
+    margin-bottom: 1.5rem;
+    background: var(--lp-tab-bg);
+    padding: 0.25rem 0.25rem 0 0.25rem;
+    border-radius: 4px 4px 0 0;
+}
+
+.lp-tabs__tab {
+    padding: 0.6rem 1.25rem;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: #50575e;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -1px;
+}
+
+.lp-tabs__tab:hover {
+    color: var(--lp-accent);
+}
+
+.lp-tabs__tab.lp-tabs__tab--active {
+    background: var(--lp-tab-active);
+    color: #1d2327;
+    border-color: var(--lp-border);
+    border-bottom-color: var(--lp-tab-active);
+}
+
+.lp-tab-panel {
+    display: none;
+}
+
+.lp-tab-panel.lp-tab-panel--active {
+    display: block;
+}
+
+/* Summary cards – match dashboard stat cards */
+.lp-analytics .lp-analytics-summary,
+.lp-analytics .lp-stats--hero {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.lp-analytics .lp-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 10px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.lp-analytics .lp-stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: #8c8f94;
+}
+
+.lp-analytics .lp-stat-card__label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: #646970;
+    margin: 0 0 0.25rem 0;
+}
+
+.lp-analytics .lp-stat-card__value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1d2327;
+    margin: 0;
+}
+
+.lp-analytics .lp-stat-card--views { border-left: 4px solid #2271b1; }
+.lp-analytics .lp-stat-card--conversions { border-left: 4px solid #00a32a; }
+.lp-analytics .lp-stat-card--clicks { border-left: 4px solid #dba617; }
+.lp-analytics .lp-stat-card--ctr { border-left: 4px solid #646970; }
+
+/* Charts – modern card */
+.lp-charts--overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1.25rem;
+}
+
+.lp-charts--overview .lp-chart-card {
+    min-height: 280px;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Tables */
+.lp-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--lp-border);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.lp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.lp-table th,
+.lp-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.lp-table th {
+    background: #f6f7f7;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.lp-table tbody tr:hover {
+    background: #f6f7f7;
+}
+
+.lp-table a {
+    color: var(--lp-accent);
+    text-decoration: none;
+}
+
+.lp-table a:hover {
+    color: var(--lp-accent-hover);
+}
+
+.lp-table--compact th,
+.lp-table--compact td {
+    padding: 0.5rem 0.75rem;
+}
+
+/* Link performance blocks */
+.lp-link-block {
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--lp-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.lp-link-block__title {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: #f6f7f7;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.lp-link-block .lp-table {
+    margin: 0;
+}
+
+.lp-empty {
+    color: #646970;
+    margin: 1rem 0;
+}
+
+/* Loading / error */
+.lp-analytics-loading,
+.lp-analytics-error {
+    padding: 1rem;
+    text-align: center;
+    color: #646970;
+}
+
+.lp-analytics-error {
+    color: #d63638;
+    background: #fcf0f1;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.lp-analytics-loading {
+    display: none;
+}
+
+/* Heatmap: Hotjar-style cards with page preview + overlay */
+.lp-heatmap-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+    .lp-heatmap-cards { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 640px) {
+    .lp-heatmap-cards { grid-template-columns: 1fr; }
+}
+
+.lp-heatmap-card {
+    background: #fff;
+    border: 1px solid var(--lp-border);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.lp-heatmap-modal__box:focus {
+    outline: none;
+}
+
+.lp-heatmap-card:focus-visible {
+    outline: 2px solid var(--lp-primary);
+    outline-offset: 2px;
+}
+
+.lp-heatmap-card:hover {
+    border-color: var(--lp-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.lp-heatmap-card__title {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--lp-fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lp-heatmap-preview {
+    position: relative;
+    height: 260px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #e5e5e5;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lp-heatmap-preview__scroll {
+    position: relative;
+    width: 100%;
+    height: 2000px;
+}
+
+.lp-heatmap-preview__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    transform: scale(var(--lp-heatmap-scale, 1));
+}
+
+.lp-heatmap-preview__iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1366px;
+    height: 2000px;
+    border: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.lp-heatmap-preview .lp-heatmap-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1366px;
+    height: 2000px;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    pointer-events: none;
+    z-index: 1;
+    background: transparent;
+}
+
+.lp-heatmap-overlay-cell {
+    min-width: 0;
+    min-height: 0;
+    background: transparent;
+}
+
+.lp-heatmap-card__hint {
+    margin: 0;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    color: #646970;
+}
+
+.lp-heatmap-item__grid {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+}
+
+/* Heatmap modal (click to expand) */
+.lp-heatmap-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.lp-heatmap-modal--open {
+    display: flex;
+}
+
+.lp-heatmap-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.lp-heatmap-modal__box {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.lp-heatmap-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--lp-border);
+}
+
+.lp-heatmap-modal__title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lp-heatmap-modal__view-page {
+    margin-right: 1rem;
+    font-size: 0.9rem;
+    color: var(--lp-primary);
+    text-decoration: none;
+}
+
+.lp-heatmap-modal__view-page:hover {
+    text-decoration: underline;
+}
+
+.lp-heatmap-modal__close {
+    background: none;
+    border: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #646970;
+    cursor: pointer;
+    padding: 0 0.25rem;
+}
+
+.lp-heatmap-modal__close:hover {
+    color: var(--lp-fg);
+}
+
+.lp-heatmap-modal__preview {
+    position: relative;
+    width: min(80vw, 960px);
+    height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #e5e5e5;
+    -webkit-overflow-scrolling: touch;
+}
+
+.lp-heatmap-modal__scroll {
+    position: relative;
+    width: 100%;
+    height: 2500px;
+}
+
+.lp-heatmap-modal__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    transform: scale(var(--lp-heatmap-scale, 1));
+}
+
+.lp-heatmap-modal__iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1366px;
+    height: 2500px;
+    border: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.lp-heatmap-modal__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1366px;
+    height: 2500px;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    grid-template-rows: repeat(10, 1fr);
+    pointer-events: none;
+    z-index: 1;
+    background: transparent;
+}
+
+body.lp-modal-open {
+    overflow: hidden;
+}
+
+/* By Page: secondary Edit link next to the title, which opens the detail view. */
+.lp-row-actions {
+    color: #646970;
+    font-size: 12px;
+}

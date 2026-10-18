@@ -20,9 +20,29 @@ if ( ! function_exists( '_n' ) ) {
 	}
 }
 
+if ( ! function_exists( 'esc_attr' ) ) {
+	function esc_attr( $text ) {
+		return htmlspecialchars( (string) $text, ENT_QUOTES );
+	}
+}
+
 require_once dirname( __DIR__ ) . '/includes/Analytics_Page.php';
 
 class AnalyticsPageTest extends TestCase {
+
+	public function test_chart_js_integrity_added_to_its_tag_only() {
+		$double = "<script src=\"https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js?ver=4.4.1\" id=\"lpmanager-pro-chartjs-js\"></script>
+";
+		$single = "<script type='text/javascript' src='https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js?ver=4.4.1' id='lpmanager-pro-chartjs-js'></script>
+";
+		$expect = ' integrity="' . Analytics_Page::CHART_JS_SRI . '" crossorigin="anonymous" src=';
+		$this->assertStringContainsString( $expect . '"https://cdn', Analytics_Page::chart_js_integrity( $double, 'lpmanager-pro-chartjs' ) );
+		$this->assertStringContainsString( "text/javascript'" . $expect . "'https://cdn", Analytics_Page::chart_js_integrity( $single, 'lpmanager-pro-chartjs' ) );
+		$this->assertSame( $double, Analytics_Page::chart_js_integrity( $double, 'other-handle' ) );
+		$with = str_replace( ' src=', ' integrity="sha384-x" src=', $double );
+		$this->assertSame( $with, Analytics_Page::chart_js_integrity( $with, 'lpmanager-pro-chartjs' ) );
+		$this->assertStringStartsWith( 'sha384-', Analytics_Page::CHART_JS_SRI );
+	}
 
 	public function test_format_duration() {
 		$this->assertSame( '1 second', Analytics_Page::format_duration( 1 ) );

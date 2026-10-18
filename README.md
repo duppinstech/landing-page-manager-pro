@@ -20,9 +20,9 @@
 - **Rage clicks** — Count repeated clicks in the same area
 - **Outbound clicks & CTA visibility** — Count clicks to other domains, and page views in which a call-to-action became visible
 - **Form interactions** — Count form starts (first field focused) and submissions
-- **Pro Analytics screen** (administrators) — Views, conversions, link clicks, average time on page, scroll depth, rage clicks, outbound clicks, CTA views, and form starts and submissions for each landing page, filterable by client and template; each page shows its top links and heatmap grid
+- **Analytics screen** (Landing Pages → Analytics, administrators) — A dashboard with charts and report tabs, filterable by client and template, and, for each landing page, its views, conversions, link clicks, average time on page, scroll depth, rage clicks, outbound clicks, CTA views, and form starts and submissions; each page shows its top links and heatmap grid
 - **REST API** — `GET /wp-json/lpmanager/v1/analytics-data` for dashboard and filtering by client/template
-- **Dashboard integration** — Pro data (visits, conversions, summary) merged into the main LP Manager dashboard. Heatmap, rage-click, engagement, and interaction data are shown under **Landing Pages → Pro Analytics** and available through the REST API.
+- **Dashboard integration** — Pro data (visits, conversions, summary) merged into the main LP Manager dashboard. Heatmap, rage-click, engagement, and interaction data are shown under **Landing Pages → Analytics** and available through the REST API.
 - **Tracking exclusions** — Editors and administrators, bots, and visitors who send privacy signals are not tracked (configurable)
 - **Consent controls** — Optionally wait for visitor consent through the WP Consent API or a JavaScript API
 
@@ -31,8 +31,8 @@
 1. Ensure **Landing Page Manager** (free) is installed and active.
 2. Upload the `landing-page-manager-pro` folder to `/wp-content/plugins/`, or install via your preferred method (e.g. private repo, ZIP).
 3. Activate **Landing Page Manager Pro** in **Plugins** in the WordPress admin.
-4. On first activation, all tracking options are enabled by default. Adjust them under **Landing Pages → Pro Settings → What is tracked**.
-5. Review **Landing Pages → Pro Settings**, which controls who is tracked (editors, bots, privacy signals, consent).
+4. On first activation, all tracking options are enabled by default. Adjust them under **Landing Pages → Tracking → What is tracked**.
+5. Review **Landing Pages → Tracking**, which controls who is tracked (editors, bots, privacy signals, consent).
 
 Upgrading from 1.0.2: counts may be lower after updating, because previews, logged-in users who can edit content (contributors, authors, editors, administrators), bots, and visitors who send privacy signals are no longer counted. Views on cached pages are now counted. Purge the page cache after updating or rolling back, so cached pages load the current tracking script.
 
@@ -42,25 +42,25 @@ Run `bash bin/build-zip.sh` from a clean checkout. It writes `landing-page-manag
 
 ## Updates
 
-Pro updates itself from the GitHub Releases of `duppinstech/landing-page-manager-pro` (the Duppins Technology GitHub updater standard). **Dashboard → Updates → Check again** forces a check. To turn updates off, add `define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true );` to `wp-config.php`. Sites can only download releases while the repository is public. Update checks contact `api.github.com`, which sees the site's IP address; GitHub's terms and privacy statement apply.
+Pro updates itself from the GitHub Releases of `duppinstech/landing-page-manager-pro` (the Duppins Technology GitHub updater standard). **Dashboard → Updates → Check again** forces a check. To turn updates off, add `define( 'LPMANAGER_PRO_DISABLE_GITHUB_UPDATER', true );` to `wp-config.php`. Sites can only download releases while the repository is public. Update checks contact `api.github.com`, which sees the site's IP address; GitHub's terms and privacy statement apply. The Analytics screen loads Chart.js 4.4.1 from `cdn.jsdelivr.net` (checked against a fixed integrity hash), so jsDelivr sees the administrator's IP address and the site's address.
 
-Analytics are stored in the `{prefix}lpmanager_pro_stats` and `{prefix}lpmanager_pro_links` tables; per-page totals that Landing Page Manager shows also stay in post meta. Deleting the plugin removes its update cache. Turn on **Delete data on uninstall** in Pro Settings to also remove Pro's own settings and options. With that option on, Pro's analytics tables are deleted too; the per-page totals Landing Page Manager shows are always kept. With it off, a reinstall keeps your full history. If you reinstall afterwards, Pro starts fresh: Pro Settings return to their defaults and all tracking options are turned on again.
+Analytics are stored in the `{prefix}lpmanager_pro_stats` and `{prefix}lpmanager_pro_links` tables; per-page totals that Landing Page Manager shows also stay in post meta. Deleting the plugin removes its update cache. Turn on **Delete data on uninstall** under **Landing Pages → Tracking** to also remove Pro's own settings and options. With that option on, Pro's analytics tables are deleted too; the per-page totals Landing Page Manager shows are always kept. With it off, a reinstall keeps your full history. If you reinstall afterwards, Pro starts fresh: its tracking settings return to their defaults and all tracking options are turned on again.
 
 ## Configuration
 
-Tracking options (page views, link clicks, time on page, scroll depth, heatmap, rage clicks, outbound clicks, CTA views, form interactions) are managed under **Landing Pages → Pro Settings → What is tracked**. Conversion tracking is always on; excluded visits are not counted. Before 1.0.4 these options were in the Landing Page Manager settings; Pro reads and writes the same stored values, so existing choices carry over.
+Tracking options (page views, link clicks, time on page, scroll depth, heatmap, rage clicks, outbound clicks, CTA views, form interactions) are managed under **Landing Pages → Tracking → What is tracked**. Conversion tracking is always on; excluded visits are not counted. Before 1.0.4 these options were in the Landing Page Manager settings; Pro reads and writes the same stored values, so existing choices carry over.
 
 ## Functions
 
 - `lpmanager_pro_tracking_options()` returns an array of booleans keyed `track_page_views`, `track_link_clicks`, `track_time_on_page`, `track_scroll_depth`, `track_heatmap`, `track_rage_clicks`, `track_outbound_clicks`, `track_cta_visibility`, and `track_form_interactions`, plus `enable_conversion_tracking` (always `true`). An option that was never saved reads as on. Returns an empty array when Landing Page Manager is not active.
 
-**Landing Pages → Pro Settings** controls whose visits are tracked, and whether deleting the plugin removes its settings. By default, logged-in users who can edit content (contributors, authors, editors, administrators), known bots or automation tools, and visitors who send Global Privacy Control or Do Not Track are excluded. Excluded visits are not counted. When a consent or cookie-banner plugin is detected, the page shows whether Pro will wait for its consent. Product names are trademarks of their respective owners and are used only to identify those plugins; no affiliation or endorsement is implied.
+**Landing Pages → Tracking** controls whose visits are tracked, and whether deleting the plugin removes its settings. By default, logged-in users who can edit content (contributors, authors, editors, administrators), known bots or automation tools, and visitors who send Global Privacy Control or Do Not Track are excluded. Excluded visits are not counted. When a consent or cookie-banner plugin is detected, the page shows whether Pro will wait for its consent. Product names are trademarks of their respective owners and are used only to identify those plugins; no affiliation or endorsement is implied.
 
 ## Filters
 
 - `lpmanager_pro_page_view_counting` (string, default `'client'`): return `'server'` to count views when the page is rendered, as before 1.0.3. When **Require consent** is on, server mode counts no views.
 - `lpmanager_pro_should_count_page_view` (bool `$count`, int `$post_id`; previews default to `false`): whether a request counts as a view. In client mode it runs during the tracking script's AJAX request.
-- `lpmanager_pro_exclude_request` (bool, result of the Pro Settings rules): return `true` to skip tracking, for example for office IP ranges.
+- `lpmanager_pro_exclude_request` (bool, result of the Tracking screen's rules): return `true` to skip tracking, for example for office IP ranges.
 - `lpmanager_pro_require_consent` (bool, default is the **Require consent** setting).
 - `lpmanager_pro_github_updater_config`, `lpmanager_pro_github_release_http_args`: change the update source or the HTTP request.
 

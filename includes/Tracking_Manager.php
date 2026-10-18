@@ -71,7 +71,7 @@ class Tracking_Manager {
         add_action( 'wp_ajax_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         add_action( 'wp_ajax_nopriv_lpmanager_pro_session', [ __CLASS__, 'start_session' ] );
         // admin_menu, not admin_init: WordPress denies unknown admin pages while building the menu, before admin_init.
-        add_action( 'admin_menu', [ __CLASS__, 'redirect_legacy_conversions_page' ], 1 );
+        add_action( 'admin_menu', [ __CLASS__, 'redirect_legacy_screens' ], 1 );
     }
 
     /**
@@ -501,15 +501,35 @@ class Tracking_Manager {
     }
 
     /**
-     * The Conversions screen was folded into Pro Analytics in 1.0.4; old links and bookmarks to
-     * admin.php?page=lp_conversions land there instead of on an "access denied" page.
+     * Old links and bookmarks land on the current screen instead of an "access denied" page: the
+     * Conversions screen (folded into analytics in 1.0.4), and, with Landing Page Manager 1.0.13+, Pro's
+     * own Pro Analytics and Pro Settings screens (now Landing Pages → Analytics and → Tracking). Hooked on
+     * admin_menu, because WordPress denies unknown pages before admin_init.
      */
-    public static function redirect_legacy_conversions_page() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation; only redirects.
-        if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'lp_conversions' || ! current_user_can( 'manage_options' ) ) {
+    public static function redirect_legacy_screens() {
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only navigation; only redirects.
+        $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        // Keep a bookmarked page detail view and its filters.
+        $args = [];
+        foreach ( [ 'page_id', 'client_id' ] as $key ) {
+            if ( ! empty( $_GET[ $key ] ) ) {
+                $args[ $key ] = absint( $_GET[ $key ] );
+            }
+        }
+        if ( isset( $_GET['template'] ) && '' !== $_GET['template'] ) {
+            $args['template'] = rawurlencode( sanitize_text_field( wp_unslash( $_GET['template'] ) ) );
+        }
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
+        $targets = [ 'lp_conversions' => Analytics_Page::url() ];
+        if ( Analytics_Page::uses_core_screen() ) {
+            $targets[ Analytics_Page::PAGE_SLUG ] = Analytics_Page::url( $args );
+            $targets[ Settings::PAGE_SLUG ]       = add_query_arg( 'page', Settings::slug(), admin_url( 'admin.php' ) );
+        }
+        // Never redirect a screen to itself (if Landing Page Manager names no Analytics screen).
+        if ( ! isset( $targets[ $page ] ) || 0 === strpos( $targets[ $page ], add_query_arg( 'page', $page, admin_url( 'admin.php' ) ) ) || ! current_user_can( 'manage_options' ) ) {
             return;
         }
-        wp_safe_redirect( admin_url( 'admin.php?page=' . Analytics_Page::PAGE_SLUG ) );
+        wp_safe_redirect( $targets[ $page ] );
         exit;
     }
 }
