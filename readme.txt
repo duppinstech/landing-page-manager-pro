@@ -3,7 +3,7 @@ Contributors: duppinstech
 Requires at least: 5.9
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,6 +79,11 @@ No. It is designed to store only aggregate counts per landing page. Each page vi
 
 == Changelog ==
 
+= 1.0.7 =
+
+* The Plugins screen names the author Duppins Technology. Settings and Help sit beside Deactivate. Sponsor follows the author, then View details and Support.
+* View details shows a banner and tabs for the description, installation, questions, screenshots, and changelog.
+
 = 1.0.6 =
 
 * With Landing Page Manager 1.0.13 or later, analytics are under **Landing Pages → Analytics** and settings are under **Landing Pages → Tracking**. Older links still open the right screen.
@@ -103,6 +108,9 @@ No. It is designed to store only aggregate counts per landing page. Each page vi
 * Updates come from GitHub Releases.
 
 == Upgrade Notice ==
+
+= 1.0.7 =
+Plugins screen links and the View details window. No settings or analytics data are changed.
 
 = 1.0.6 =
 Security fix for the Analytics dashboard. Update Landing Page Manager to 1.0.13 as well: Pro's analytics then appear under Landing Pages > Analytics, and Pro Settings becomes Landing Pages > Tracking (your settings carry over).

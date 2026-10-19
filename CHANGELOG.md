@@ -4,6 +4,13 @@ All notable changes to Landing Page Manager Pro are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [1.0.7] - 2026-10-18
+
+### Changed
+
+- The Plugins screen names the author **Duppins Technology**. **Settings** opens **Landing Pages → Tracking** for administrators, and **Help** opens the Landing Page Manager guide in a new tab. **Sponsor** follows the author. **View details** and **Support** are at the end of the row.
+- **View details** shows a banner and tabs for the description, installation, questions, screenshots, and changelog. The changelog tab uses the GitHub release notes when an update check has saved them.
+
 ## [1.0.6] - 2026-10-17
 
 ### Changed
