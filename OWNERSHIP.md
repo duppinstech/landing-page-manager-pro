@@ -1,14 +1,16 @@
 # OWNERSHIP.md
 
-Ownership notice for this repository.
+Ownership notice for this repository. Portable notice. The same file goes in every repo Odell Duppins Jr works on.
 
 ## Author and owner
 
 - **Product:** Landing Page Manager Pro
-- **Author:** Odell Duppins
-- **Owner and copyright holder:** Odell Duppins, doing business as Duppins Technology (https://duppinstech.com)
+- **Author:** Odell Duppins Jr
+- **Business:** Duppins Technology (https://duppinstech.com)
+- **Owner and copyright holder:** Odell Duppins Jr, doing business as Duppins Technology (https://duppinstech.com)
+- **Support:** support@duppinstech.com
 
-Landing Page Manager Pro is a Duppins Technology product, licensed under GPL-2.0-or-later from version 1.0.3. Odell Duppins is the author and holds the copyright; Duppins Technology is his trade name, not a separate entity. Copyright notices name **Odell Duppins (d/b/a Duppins Technology)**. The plugin `Author` header and package metadata name **Odell Duppins** (or "Odell Duppins / Duppins Technology"). They do not name a client.
+Landing Page Manager Pro is a Duppins Technology product, licensed under GPL-2.0-or-later from version 1.0.3. Odell Duppins Jr is the author and holds the copyright; Duppins Technology is his trade name, not a separate entity. `LICENSE` and the copyright line in `README.md` name **Duppins Technology**. The plugin `Author` header names **Duppins Technology**. `composer.json` has no `authors` field. They do not name a client.
 
 ## Clients
 
